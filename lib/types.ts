@@ -8,14 +8,14 @@ export interface Market {
   marketTitle: string;
   yesTokenId: string;
   noTokenId: string;
-  volume24h: string; // String for safe parsing of large numbers
+  volume24h: string;
   statusEnum: string;
 }
 
 /** Token price snapshot */
 export interface TokenPrice {
   tokenId: string;
-  price: string; // String for precision preservation
+  price: string;
   timestamp: number;
 }
 
@@ -29,6 +29,7 @@ export interface TokenPriceInfo {
 export interface MarketEdge {
   marketId: number;
   marketTitle: string;
+  marketUrl: string;
   volume24h: number;
   yes: TokenPriceInfo;
   no: TokenPriceInfo;
@@ -50,3 +51,28 @@ export interface ApiError {
   error: string;
   message: string;
 }
+
+/** Orderbook level */
+export interface OrderbookLevel {
+  price: number;
+  size: number;
+}
+
+/** Orderbook data for a token */
+export interface TokenOrderbook {
+  tokenId: string;
+  bestBid: OrderbookLevel | null;
+  bestAsk: OrderbookLevel | null;
+  spread: number | null;
+  midPrice: number | null;
+}
+
+/** Orderbook API response */
+export interface OrderbookResponse {
+  tokenId: string;
+  orderbook: TokenOrderbook;
+  timestamp: number;
+}
+
+/** Sort options for markets */
+export type SortOption = "volume" | "edge";

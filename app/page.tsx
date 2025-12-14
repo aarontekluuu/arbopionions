@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAppState } from "./context";
 import { MarketCard } from "@/components/MarketCard";
+import { MarketModal } from "@/components/MarketModal";
 import { FilterBar } from "@/components/FilterBar";
-import type { FilterState, EdgesResponse, MarketEdge } from "@/types";
+import type { FilterState, EdgesResponse, MarketEdge, SortOption } from "@/types";
 
 async function fetchEdges(limit: number): Promise<EdgesResponse> {
   const res = await fetch(`/api/edges?limit=${limit}`);
@@ -25,6 +26,9 @@ export default function MarketsPage() {
     autoRefresh: true,
   });
 
+  const [sortBy, setSortBy] = useState<SortOption>("volume");
+  const [selectedMarket, setSelectedMarket] = useState<MarketEdge | null>(null);
+
   // Sync local filter state with global context
   useEffect(() => {
     setFilters((prev) => ({ ...prev, autoRefresh }));
@@ -32,7 +36,6 @@ export default function MarketsPage() {
 
   const handleFiltersChange = (newFilters: FilterState) => {
     setFilters(newFilters);
-    // Sync autoRefresh to global context
     if (newFilters.autoRefresh !== autoRefresh) {
       setAutoRefresh(newFilters.autoRefresh);
     }
@@ -52,10 +55,18 @@ export default function MarketsPage() {
     refetchInterval: autoRefresh ? 15000 : false,
   });
 
-  // Filter markets by minEdge (convert percentage to decimal)
-  const minEdgeDecimal = filters.minEdge / 100;
-  const filteredMarkets: MarketEdge[] =
-    data?.list?.filter((m) => m.edge >= minEdgeDecimal) ?? [];
+  // Filter and sort markets
+  const filteredMarkets: MarketEdge[] = useMemo(() => {
+    const minEdgeDecimal = filters.minEdge / 100;
+    const filtered = data?.list?.filter((m) => m.edge >= minEdgeDecimal) ?? [];
+
+    // Sort based on selected option
+    if (sortBy === "edge") {
+      return [...filtered].sort((a, b) => b.edge - a.edge);
+    }
+    // Default: volume desc (already sorted by API)
+    return filtered;
+  }, [data?.list, filters.minEdge, sortBy]);
 
   const lastUpdated = dataUpdatedAt
     ? new Date(dataUpdatedAt).toISOString()
@@ -63,17 +74,25 @@ export default function MarketsPage() {
 
   const isStale = data?.stale ?? false;
 
+  const handleMarketClick = (market: MarketEdge) => {
+    setSelectedMarket(market);
+  };
+
+  const handleCloseModal = () => {
+    setSelectedMarket(null);
+  };
+
   return (
     <div className="max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-xl font-semibold text-terminal-text flex items-center gap-2">
           <span className="text-terminal-accent">&gt;</span>
-          MARKETS
+          OPINION.TRADE ARBITRAGE
           <span className="cursor-blink" />
         </h1>
         <p className="text-sm text-terminal-dim mt-1">
-          Real-time prediction market opportunities ranked by volume
+          Real-time prediction market opportunities ranked by {sortBy === "volume" ? "volume" : "edge"}
         </p>
       </div>
 
@@ -112,6 +131,33 @@ export default function MarketsPage() {
         lastUpdated={lastUpdated}
         isRefetching={isFetching}
       />
+
+      {/* Sort Toggle */}
+      <div className="flex items-center gap-2 mb-4">
+        <span className="text-[10px] text-terminal-dim tracking-wider uppercase">SORT BY</span>
+        <div className="flex rounded overflow-hidden border border-terminal-border">
+          <button
+            onClick={() => setSortBy("volume")}
+            className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+              sortBy === "volume"
+                ? "bg-terminal-accent text-terminal-bg"
+                : "bg-terminal-bg text-terminal-dim hover:text-terminal-text hover:bg-terminal-border"
+            }`}
+          >
+            VOLUME
+          </button>
+          <button
+            onClick={() => setSortBy("edge")}
+            className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+              sortBy === "edge"
+                ? "bg-terminal-accent text-terminal-bg"
+                : "bg-terminal-bg text-terminal-dim hover:text-terminal-text hover:bg-terminal-border"
+            }`}
+          >
+            EDGE
+          </button>
+        </div>
+      </div>
 
       {/* Loading State */}
       {isLoading && (
@@ -198,7 +244,12 @@ export default function MarketsPage() {
           {filteredMarkets.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {filteredMarkets.map((market) => (
-                <MarketCard key={market.marketId} market={market} />
+                <MarketCard
+                  key={market.marketId}
+                  market={market}
+                  isStale={isStale}
+                  onClick={handleMarketClick}
+                />
               ))}
             </div>
           ) : (
@@ -216,6 +267,13 @@ export default function MarketsPage() {
           )}
         </>
       )}
+
+      {/* Market Detail Modal */}
+      <MarketModal
+        market={selectedMarket}
+        isStale={isStale}
+        onClose={handleCloseModal}
+      />
     </div>
   );
 }

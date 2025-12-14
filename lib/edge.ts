@@ -1,6 +1,11 @@
 import type { Market, TokenPrice, MarketEdge } from "./types";
 
 /**
+ * Opinion.trade base URL for market deep links
+ */
+const OPINION_BASE_URL = "https://opinion.trade/market";
+
+/**
  * Safely parse a string to a number, returning 0 for invalid values
  */
 function safeParseFloat(value: string | undefined | null): number {
@@ -9,6 +14,13 @@ function safeParseFloat(value: string | undefined | null): number {
   }
   const parsed = parseFloat(value);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+/**
+ * Build Opinion.trade market URL from marketId
+ */
+function buildMarketUrl(marketId: number): string {
+  return `${OPINION_BASE_URL}/${marketId}`;
 }
 
 /**
@@ -60,6 +72,7 @@ export function computeEdges(
       return {
         marketId: market.marketId,
         marketTitle: market.marketTitle,
+        marketUrl: buildMarketUrl(market.marketId),
         volume24h,
         yes: {
           tokenId: market.yesTokenId,

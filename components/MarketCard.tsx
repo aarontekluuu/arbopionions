@@ -1,12 +1,14 @@
 "use client";
 
-import type { MarketEdge } from "@/types";
+import type { MarketEdge } from "@/lib/types";
 
 interface MarketCardProps {
   market: MarketEdge;
+  isStale?: boolean;
+  onClick?: (market: MarketEdge) => void;
 }
 
-export function MarketCard({ market }: MarketCardProps) {
+export function MarketCard({ market, isStale = false, onClick }: MarketCardProps) {
   const hasEdge = market.edge > 0;
   const edgePercent = market.edge * 100;
   const edgeColor =
@@ -24,32 +26,43 @@ export function MarketCard({ market }: MarketCardProps) {
   };
   const formatEdge = (edge: number) => `${(edge * 100).toFixed(2)}%`;
 
+  const handleClick = () => {
+    if (onClick) onClick(market);
+  };
+
   return (
     <div
+      onClick={handleClick}
       className={`
       relative bg-terminal-surface border rounded-lg overflow-hidden
       transition-all duration-200 hover:border-terminal-muted group
       ${hasEdge ? "border-terminal-accent/30 edge-glow" : "border-terminal-border"}
+      ${onClick ? "cursor-pointer hover:scale-[1.02]" : ""}
     `}
     >
-      {/* Edge Badge */}
-      {hasEdge && (
-        <div className="absolute top-0 right-0">
+      {/* Badges */}
+      <div className="absolute top-0 right-0 flex gap-1 p-1">
+        {isStale && (
+          <div className="px-1.5 py-0.5 text-[9px] font-medium tracking-wider bg-terminal-warn/20 text-terminal-warn rounded">
+            STALE
+          </div>
+        )}
+        {hasEdge && (
           <div
             className={`
-            px-2 py-1 text-[10px] font-bold tracking-wider
-            bg-terminal-accent/20 ${edgeColor} rounded-bl
+            px-1.5 py-0.5 text-[9px] font-bold tracking-wider
+            bg-terminal-accent/20 ${edgeColor} rounded
           `}
           >
-            +{formatEdge(market.edge)} EDGE
+            +{formatEdge(market.edge)}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Header */}
       <div className="p-4 pb-3">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="text-sm font-medium text-terminal-text leading-snug line-clamp-2 group-hover:text-white transition-colors">
+          <h3 className="text-sm font-medium text-terminal-text leading-snug line-clamp-2 group-hover:text-white transition-colors pr-16">
             {market.marketTitle}
           </h3>
         </div>

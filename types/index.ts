@@ -6,6 +6,10 @@ export type {
   MarketEdge,
   EdgesResponse,
   ApiError,
+  OrderbookLevel,
+  TokenOrderbook,
+  OrderbookResponse,
+  SortOption,
 } from "@/lib/types";
 
 // Frontend-specific types
