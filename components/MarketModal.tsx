@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from "react";
 import type { MarketEdge, TokenOrderbook } from "@/lib/types";
-import { getOpinionBaseUrl } from "@/lib/links";
 
 interface MarketModalProps {
   market: MarketEdge | null;
@@ -95,7 +94,6 @@ export function MarketModal({ market, isStale, onClose }: MarketModalProps) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Fallback for older browsers
       const textArea = document.createElement("textarea");
       textArea.value = String(market.marketId);
       document.body.appendChild(textArea);
@@ -110,6 +108,10 @@ export function MarketModal({ market, isStale, onClose }: MarketModalProps) {
   if (!market) return null;
 
   const formatPrice = (price: number) => `${(price * 100).toFixed(1)}¢`;
+  const formatDollars = (amount: number) => {
+    if (amount >= 1000) return `$${(amount / 1000).toFixed(2)}K`;
+    return `$${amount.toFixed(2)}`;
+  };
   const formatVolume = (vol: number) => {
     if (vol >= 1_000_000) return `$${(vol / 1_000_000).toFixed(2)}M`;
     if (vol >= 1_000) return `$${(vol / 1_000).toFixed(2)}K`;
@@ -128,7 +130,14 @@ export function MarketModal({ market, isStale, onClose }: MarketModalProps) {
   };
 
   const hasEdge = market.edge > 0;
-  const edgeValue = market.edge * market.volume24h;
+  
+  // Calculate profit for $1,000 deployment
+  // Profit = deployment * (1 - sum) / sum when sum < 1
+  // If sum >= 1, no arbitrage profit
+  const deploymentAmount = 1000;
+  const profitPerDeployment = market.sum < 1 
+    ? deploymentAmount * (1 - market.sum) / market.sum 
+    : 0;
 
   return (
     <div
@@ -205,7 +214,7 @@ export function MarketModal({ market, isStale, onClose }: MarketModalProps) {
             </div>
             <div className="bg-terminal-bg border border-terminal-border rounded p-3 text-center">
               <div className="text-[10px] text-terminal-dim tracking-wider mb-1">SUM</div>
-              <div className={`text-sm font-semibold ${market.sum !== 1 ? "text-terminal-warn" : "text-terminal-text"}`}>
+              <div className={`text-sm font-semibold ${market.sum < 1 ? "text-terminal-accent" : market.sum > 1 ? "text-terminal-danger" : "text-terminal-text"}`}>
                 {formatPrice(market.sum)}
               </div>
             </div>
@@ -221,15 +230,39 @@ export function MarketModal({ market, isStale, onClose }: MarketModalProps) {
             </div>
           </div>
 
-          {/* Edge Available */}
+          {/* Profit Calculator */}
           {hasEdge && (
-            <div className="bg-terminal-accent/10 border border-terminal-accent/30 rounded-lg p-4 text-center">
-              <div className="text-[10px] text-terminal-accent tracking-wider mb-1">EDGE AVAILABLE</div>
-              <div className="text-2xl font-bold text-terminal-accent">
-                ~{formatVolume(edgeValue)}
+            <div className="bg-terminal-accent/10 border border-terminal-accent/30 rounded-lg p-4">
+              <div className="text-center">
+                <div className="text-[10px] text-terminal-accent tracking-wider mb-2">
+                  IF YOU DEPLOY ${deploymentAmount.toLocaleString()} AT CURRENT PRICES
+                </div>
+                <div className="text-3xl font-bold text-terminal-accent mb-1">
+                  ~{formatDollars(profitPerDeployment)} profit
+                </div>
+                <div className="text-[10px] text-terminal-dim">
+                  Pre-fees, assumes full fill at shown prices
+                </div>
               </div>
-              <div className="text-[10px] text-terminal-dim mt-1">
-                Based on 24h volume (depth calc coming soon)
+              <div className="mt-3 pt-3 border-t border-terminal-accent/20 grid grid-cols-3 gap-2 text-center">
+                <div>
+                  <div className="text-[9px] text-terminal-dim">YES COST</div>
+                  <div className="text-xs text-terminal-text">
+                    {formatDollars(deploymentAmount * market.yes.price / market.sum)}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[9px] text-terminal-dim">NO COST</div>
+                  <div className="text-xs text-terminal-text">
+                    {formatDollars(deploymentAmount * market.no.price / market.sum)}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[9px] text-terminal-dim">PAYOUT</div>
+                  <div className="text-xs text-terminal-accent">
+                    {formatDollars(deploymentAmount / market.sum)}
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -308,7 +341,7 @@ export function MarketModal({ market, isStale, onClose }: MarketModalProps) {
             </div>
           </div>
 
-          {/* Open on Opinion.trade Buttons */}
+          {/* Open on Opinion.trade Button */}
           <div className="space-y-2">
             <a
               href={market.marketUrl}
@@ -321,40 +354,8 @@ export function MarketModal({ market, isStale, onClose }: MarketModalProps) {
               </svg>
               OPEN ON OPINION.TRADE
             </a>
-            
-            {/* Fallback: Browse all markets */}
-            <div className="flex items-center gap-2">
-              <a
-                href={getOpinionBaseUrl()}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 flex items-center justify-center gap-2 py-2 bg-terminal-border text-terminal-dim font-medium text-sm rounded-lg hover:bg-terminal-muted hover:text-terminal-text transition-colors"
-              >
-                BROWSE ALL MARKETS
-              </a>
-              <button
-                onClick={handleCopyMarketId}
-                className="flex items-center justify-center gap-2 px-4 py-2 bg-terminal-border text-terminal-dim font-medium text-sm rounded-lg hover:bg-terminal-muted hover:text-terminal-text transition-colors"
-              >
-                {copied ? (
-                  <>
-                    <svg className="w-4 h-4 text-terminal-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    COPIED!
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                    </svg>
-                    COPY ID
-                  </>
-                )}
-              </button>
-            </div>
             <p className="text-[10px] text-terminal-dim text-center">
-              If direct link fails, browse markets and search for ID #{market.marketId}
+              Market ID: #{market.marketId} • Click ID badge above to copy
             </p>
           </div>
         </div>

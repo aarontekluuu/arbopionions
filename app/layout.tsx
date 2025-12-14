@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Providers } from "./providers";
+import { WagmiProvider } from "@/providers/WagmiProvider";
 import { AppProvider } from "./context";
 import { NavBar } from "@/components/NavBar";
 import { StatusIndicator } from "@/components/StatusIndicator";
@@ -18,7 +18,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="min-h-screen bg-terminal-bg text-terminal-text font-mono antialiased">
-        <Providers>
+        <WagmiProvider>
           <AppProvider>
             <div className="flex flex-col min-h-screen">
               <NavBar />
@@ -35,7 +35,7 @@ export default function RootLayout({
             </div>
             <StatusIndicator />
           </AppProvider>
-        </Providers>
+        </WagmiProvider>
       </body>
     </html>
   );
