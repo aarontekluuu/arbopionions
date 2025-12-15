@@ -47,10 +47,10 @@ const nextConfig = {
             value: [
               "default-src 'self'",
               "script-src 'self' 'unsafe-eval' 'unsafe-inline'", // 'unsafe-eval' needed for WalletConnect
-              "style-src 'self' 'unsafe-inline'",
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com", // Allow Google Fonts stylesheet
               "img-src 'self' data: https:",
-              "font-src 'self' data:",
-              "connect-src 'self' https://*.walletconnect.com https://*.walletconnect.org wss://*.walletconnect.com wss://*.walletconnect.org https://*.vercel.app https://proxy.opinion.trade",
+              "font-src 'self' data: https://fonts.gstatic.com", // Allow Google Fonts
+              "connect-src 'self' https://*.walletconnect.com https://*.walletconnect.org https://api.web3modal.org wss://*.walletconnect.com wss://*.walletconnect.org https://*.vercel.app https://proxy.opinion.trade", // Allow WalletConnect API
               "frame-src 'self' https://*.walletconnect.com",
             ].join("; "),
           },
