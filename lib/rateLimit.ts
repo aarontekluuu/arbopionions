@@ -101,8 +101,9 @@ class RateLimiter {
   }
 }
 
-// Rate limiter: 30 requests per 15 seconds per IP
-export const apiRateLimiter = new RateLimiter(30, 15_000);
+// Rate limiter: 60 requests per 15 seconds per IP
+// Increased to handle auto-refresh (polls every 15s) + user interactions
+export const apiRateLimiter = new RateLimiter(60, 15_000);
 
 import type { NextRequest } from "next/server";
 

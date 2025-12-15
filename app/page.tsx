@@ -69,8 +69,13 @@ export default function MarketsPage() {
 
   // Filter and sort markets
   const filteredMarkets: MarketEdge[] = useMemo(() => {
+    // Safely handle null/undefined data
+    if (!data || !data.list || !Array.isArray(data.list)) {
+      return [];
+    }
+
     const minEdgeDecimal = filters.minEdge / 100;
-    const filtered = data?.list?.filter((m) => m.edge >= minEdgeDecimal) ?? [];
+    const filtered = data.list.filter((m) => m && m.edge >= minEdgeDecimal);
 
     // Sort based on selected option
     if (sortBy === "edge") {
@@ -239,9 +244,9 @@ export default function MarketsPage() {
                 FILTERED BY {filters.minEdge}%+ EDGE
               </span>
             )}
-            {filteredMarkets.filter((m) => m.edge > 0).length > 0 && (
+            {filteredMarkets && filteredMarkets.length > 0 && filteredMarkets.filter((m) => m && m.edge > 0).length > 0 && (
               <span className="text-terminal-accent">
-                {filteredMarkets.filter((m) => m.edge > 0).length} WITH EDGE
+                {filteredMarkets.filter((m) => m && m.edge > 0).length} WITH EDGE
               </span>
             )}
             {isStale && (

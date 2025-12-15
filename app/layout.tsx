@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./wallet-fix";
 import { WagmiProvider } from "@/providers/WagmiProvider";
 import { AppProvider } from "./context";
 import { NavBar } from "@/components/NavBar";

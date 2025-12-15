@@ -252,7 +252,7 @@ export async function GET(
         },
         { status: 429, headers: getCorsHeaders() }
       );
-      response.headers.set("X-RateLimit-Limit", "30");
+      response.headers.set("X-RateLimit-Limit", "60");
       response.headers.set("X-RateLimit-Remaining", "0");
       response.headers.set(
         "X-RateLimit-Reset",
@@ -269,7 +269,7 @@ export async function GET(
       const response = NextResponse.json(cache.data, {
         headers: getCorsHeaders(),
       });
-      response.headers.set("X-RateLimit-Limit", "30");
+      response.headers.set("X-RateLimit-Limit", "60");
       response.headers.set(
         "X-RateLimit-Remaining",
         String(apiRateLimiter.getRemaining(clientId))
@@ -282,7 +282,7 @@ export async function GET(
     const jsonResponse = NextResponse.json(response, {
       headers: getCorsHeaders(),
     });
-    jsonResponse.headers.set("X-RateLimit-Limit", "30");
+    jsonResponse.headers.set("X-RateLimit-Limit", "60");
     jsonResponse.headers.set(
       "X-RateLimit-Remaining",
       String(apiRateLimiter.getRemaining(clientId))
