@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import type { MarketEdge, TokenOrderbook } from "@/lib/types";
 import { getMarketPlatform, getPlatformInfo } from "@/lib/platforms";
+import { getOpinionSearchUrl } from "@/lib/links";
 
 interface MarketModalProps {
   market: MarketEdge | null;
@@ -393,8 +394,19 @@ export function MarketModal({ market, isStale, onClose }: MarketModalProps) {
               </svg>
               VIEW ON OPINION.TRADE
             </a>
+            {/* Fallback search link if direct link doesn't work */}
+            <a
+              href={getOpinionSearchUrl(market.marketTitle)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 w-full py-2 text-xs text-terminal-dim hover:text-terminal-text transition-colors underline"
+            >
+              Can't find market? Search for "{market.marketTitle.substring(0, 40)}..."
+            </a>
             <p className="text-[10px] text-terminal-dim text-center">
-              Market ID: #{market.marketId} • Click ID badge above to copy
+              Market ID: #{market.marketId}
+              {market.topicId && ` • Topic ID: ${market.topicId}`}
+              {!market.topicId && " • (No topicId - using marketId)"}
             </p>
           </div>
         </div>

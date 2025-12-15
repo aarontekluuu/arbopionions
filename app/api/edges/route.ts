@@ -71,16 +71,36 @@ async function fetchFromOpinionAPI(limit: number): Promise<EdgesResponse> {
     };
   }
 
+  // Log API response structure for debugging (only in development)
+  if (process.env.NODE_ENV === "development" && opinionMarkets.length > 0) {
+    const sampleMarket = opinionMarkets[0];
+    console.log("[DEBUG] Sample Opinion API market response:", {
+      market_id: sampleMarket.market_id,
+      topic_id: (sampleMarket as any).topic_id,
+      title: sampleMarket.title,
+      allKeys: Object.keys(sampleMarket),
+    });
+  }
+
   // Convert to internal Market type
-  const markets: Market[] = opinionMarkets.map((m) => ({
-    marketId: m.market_id,
-    topicId: m.topic_id, // Use topic_id if available for URL generation
-    marketTitle: m.title,
-    yesTokenId: m.yes_token_id,
-    noTokenId: m.no_token_id,
-    volume24h: m.volume_24h,
-    statusEnum: m.status,
-  }));
+  const markets: Market[] = opinionMarkets.map((m) => {
+    // Try to extract topic_id from various possible field names
+    const topicId = 
+      (m as any).topic_id ?? 
+      (m as any).topicId ?? 
+      (m as any).topic_id_number ??
+      undefined;
+
+    return {
+      marketId: m.market_id,
+      topicId: topicId, // Use topic_id if available for URL generation
+      marketTitle: m.title,
+      yesTokenId: m.yes_token_id,
+      noTokenId: m.no_token_id,
+      volume24h: m.volume_24h,
+      statusEnum: m.status,
+    };
+  });
 
   // Collect all token IDs
   const tokenIds = markets.flatMap((m) => [m.yesTokenId, m.noTokenId]);

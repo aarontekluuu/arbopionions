@@ -75,12 +75,18 @@ export function getMockMarkets(limit: number): Market[] {
   for (let i = 0; i < Math.min(clampedLimit, MARKET_TITLES.length); i++) {
     // Generate deterministic volume (10K - 500K range)
     const volumeBase = random() * 490000 + 10000;
+    
+    // For mock data, use marketId as topicId (in real API, these may differ)
+    // This allows us to test URL generation
+    const marketId = 1000 + i;
+    const topicId = 73 + i; // Use different IDs to test topicId vs marketId
 
     markets.push({
-      marketId: 1000 + i,
+      marketId,
+      topicId, // Include topicId in mock data for testing
       marketTitle: MARKET_TITLES[i],
-      yesTokenId: `token-${1000 + i}-yes`,
-      noTokenId: `token-${1000 + i}-no`,
+      yesTokenId: `token-${marketId}-yes`,
+      noTokenId: `token-${marketId}-no`,
       volume24h: volumeBase.toFixed(2),
       statusEnum: "ACTIVE",
     });

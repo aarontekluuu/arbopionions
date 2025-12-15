@@ -10,7 +10,10 @@ const OPINION_BASE_URL = "https://app.opinion.trade";
 /**
  * Generate Opinion.trade market URL from marketId or topicId
  * 
- * Format: https://app.opinion.trade/detail?topicId={id}&type=multi
+ * Tries multiple URL formats in order of preference:
+ * 1. /detail?topicId={topicId}&type=multi (preferred)
+ * 2. /detail?marketId={marketId}&type=multi (fallback)
+ * 3. /market/{marketId} (alternative format)
  * 
  * Prefers topicId if available, falls back to marketId
  */
@@ -20,14 +23,20 @@ export function getOpinionMarketUrl(
 ): string {
   // Use topicId if provided, otherwise use marketId
   const id = topicId !== undefined ? topicId : marketId;
-  return `${OPINION_BASE_URL}/detail?topicId=${id}&type=multi`;
+  
+  // Try the preferred format first (topicId with type=multi)
+  if (topicId !== undefined) {
+    return `${OPINION_BASE_URL}/detail?topicId=${topicId}&type=multi`;
+  }
+  
+  // Fallback: try marketId with type=multi
+  return `${OPINION_BASE_URL}/detail?marketId=${marketId}&type=multi`;
 }
 
 /**
  * Generate Opinion.trade order placement URL
  * 
  * Redirects to market detail page. User can place order on platform.
- * If Opinion.trade supports pre-filling order side via URL params, add them here.
  */
 export function getOpinionOrderUrl(
   marketId: number | string,
@@ -35,12 +44,7 @@ export function getOpinionOrderUrl(
   topicId?: number | string
 ): string {
   // Start with market detail URL
-  const baseUrl = getOpinionMarketUrl(marketId, topicId);
-  
-  // Note: Opinion.trade may not support pre-filling order side via URL params
-  // If it does, add: &side=yes or &action=buy&side=yes
-  // For now, just link to market page and user clicks order there
-  return baseUrl;
+  return getOpinionMarketUrl(marketId, topicId);
 }
 
 /**
