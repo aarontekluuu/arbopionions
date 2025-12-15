@@ -89,26 +89,36 @@ async function fetchFromOpinionAPI(limit: number): Promise<EdgesResponse> {
   // Log API response structure for debugging (only in development)
   if (process.env.NODE_ENV === "development" && opinionMarkets.length > 0) {
     const sampleMarket = opinionMarkets[0];
-    console.log("[DEBUG] Sample Opinion API market response:", {
-      market_id: sampleMarket.market_id,
-      topic_id: (sampleMarket as any).topic_id,
-      title: sampleMarket.title,
-      allKeys: Object.keys(sampleMarket),
+    console.log("[DEBUG] Opinion API Response Structure:", {
+      totalMarkets: opinionMarkets.length,
+      sampleMarket: {
+        market_id: sampleMarket.market_id,
+        topic_id: (sampleMarket as any).topic_id,
+        topicId: (sampleMarket as any).topicId,
+        topic_id_number: (sampleMarket as any).topic_id_number,
+        title: sampleMarket.title,
+        allKeys: Object.keys(sampleMarket),
+        fullSample: JSON.stringify(sampleMarket, null, 2).substring(0, 500),
+      },
     });
   }
 
   // Convert to internal Market type
   const markets: Market[] = opinionMarkets.map((m) => {
     // Try to extract topic_id from various possible field names
+    // Check common variations: topic_id, topicId, topic_id_number, topicIdNumber
     const topicId = 
       (m as any).topic_id ?? 
       (m as any).topicId ?? 
       (m as any).topic_id_number ??
+      (m as any).topicIdNumber ??
+      (m as any).topic?.id ??
+      (m as any).topic?.topic_id ??
       undefined;
 
     return {
       marketId: m.market_id,
-      topicId: topicId, // Use topic_id if available for URL generation
+      topicId: topicId !== undefined && topicId !== null ? Number(topicId) : undefined,
       marketTitle: m.title,
       yesTokenId: m.yes_token_id,
       noTokenId: m.no_token_id,
@@ -230,7 +240,7 @@ async function fetchEdgesWithCoalescing(
  * Returns computed market edges with YES/NO complement pricing.
  *
  * Query Parameters:
- * - limit (number): Number of markets to return (default: 20, min: 5, max: 40)
+ * - limit (number): Number of markets to return (default: 20, min: 5, max: 200)
  *
  * Response:
  * - updatedAt (number): Timestamp of when data was computed

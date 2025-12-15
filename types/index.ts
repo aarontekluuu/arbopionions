@@ -14,7 +14,7 @@ export type {
 
 // Frontend-specific types
 export interface FilterState {
-  limit: 20 | 40;
+  limit: 20 | 40 | 60 | 100;
   minEdge: number;
   autoRefresh: boolean;
 }

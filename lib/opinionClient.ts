@@ -15,11 +15,16 @@ import "server-only";
 export interface OpinionMarket {
   market_id: number;
   topic_id?: number; // May exist in API response - use for URL generation
+  topicId?: number; // Alternative field name
+  topic_id_number?: number; // Another possible field name
+  topic?: { id?: number; topic_id?: number }; // Nested topic object
   title: string;
   yes_token_id: string;
   no_token_id: string;
   volume_24h: string;
   status: string;
+  // Allow additional fields from API (for flexibility)
+  [key: string]: any;
 }
 
 export interface OpinionMarketsResponse {
@@ -178,14 +183,26 @@ async function fetchWithRetry(
 
 /**
  * Fetch activated markets from Opinion API
+ * 
+ * @param limit - Maximum number of markets to fetch
+ * @param offset - Optional offset for pagination (if API supports it)
+ * @returns Array of OpinionMarket objects
  */
-export async function fetchMarkets(limit: number): Promise<OpinionMarket[]> {
+export async function fetchMarkets(
+  limit: number,
+  offset?: number
+): Promise<OpinionMarket[]> {
   const { apiKey, baseUrl } = getConfig();
 
   const url = new URL(`${baseUrl}/market`);
   url.searchParams.set("status", "activated");
   url.searchParams.set("sortBy", "5"); // Sort by volume
   url.searchParams.set("limit", String(limit));
+  
+  // Add offset if provided (for pagination support)
+  if (offset !== undefined && offset > 0) {
+    url.searchParams.set("offset", String(offset));
+  }
 
   const response = await fetchWithRetry(url.toString(), {
     method: "GET",
@@ -196,7 +213,14 @@ export async function fetchMarkets(limit: number): Promise<OpinionMarket[]> {
   });
 
   const data: OpinionMarketsResponse = await response.json();
-  return data.data || [];
+  const markets = data.data || [];
+  
+  // Log API response details in development for debugging
+  if (process.env.NODE_ENV === "development" && markets.length > 0) {
+    console.log(`[Opinion API] Fetched ${markets.length} markets from ${url.toString()}`);
+  }
+  
+  return markets;
 }
 
 /**

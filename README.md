@@ -128,7 +128,7 @@ Supported wallets:
 Returns market data with edge calculations.
 
 **Query Parameters:**
-- `limit` (number): Number of markets to return (default: 20, min: 5, max: 40)
+- `limit` (number): Number of markets to return (default: 20, min: 5, max: 200)
 
 **Response:**
 ```json

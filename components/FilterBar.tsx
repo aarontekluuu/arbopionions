@@ -36,11 +36,11 @@ export function FilterBar({
             Limit
           </label>
           <div className="flex rounded overflow-hidden border border-terminal-border">
-            {[20, 40].map((val) => (
+            {[20, 40, 60, 100].map((val) => (
               <button
                 key={val}
                 onClick={() =>
-                  onFiltersChange({ ...filters, limit: val as 20 | 40 })
+                  onFiltersChange({ ...filters, limit: val as 20 | 40 | 60 | 100 })
                 }
                 className={`
                   px-3 py-1.5 text-xs font-medium transition-colors
