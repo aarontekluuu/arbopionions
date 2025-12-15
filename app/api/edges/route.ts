@@ -362,6 +362,29 @@ export async function GET(
     const { searchParams } = request.nextUrl;
     const limit = parseLimit(searchParams);
 
+    // Check if API is configured before proceeding
+    if (!isOpinionConfigured() && process.env.NODE_ENV === "production") {
+      const missingVars: string[] = [];
+      if (!process.env.OPINION_API_KEY) {
+        missingVars.push("OPINION_API_KEY");
+      }
+      if (!process.env.OPINION_OPENAPI_BASE_URL) {
+        missingVars.push("OPINION_OPENAPI_BASE_URL");
+      }
+      
+      const apiError: ApiError = {
+        error: "API_NOT_CONFIGURED",
+        message: `Opinion API not configured. Please set the following environment variables in Vercel: ${missingVars.join(", ")}`,
+      };
+
+      const errorResponse = NextResponse.json(apiError, {
+        status: 503,
+        headers: getCorsHeaders(),
+      });
+      errorResponse.headers.set("X-Data-Source", "none");
+      return addSecurityHeaders(errorResponse);
+    }
+
     // Return cached data if valid
     if (isCacheValid() && cache) {
       const response = NextResponse.json(cache.data, {
@@ -398,6 +421,29 @@ export async function GET(
     
     if (process.env.NODE_ENV === "development") {
       console.error("[/api/edges] Error fetching data:", errorMessage);
+    }
+
+    // Check if error is about API not being configured
+    if (errorMessage.includes("Opinion API not configured") || errorMessage.includes("Missing environment variables")) {
+      const missingVars: string[] = [];
+      if (!process.env.OPINION_API_KEY) {
+        missingVars.push("OPINION_API_KEY");
+      }
+      if (!process.env.OPINION_OPENAPI_BASE_URL) {
+        missingVars.push("OPINION_OPENAPI_BASE_URL");
+      }
+      
+      const apiError: ApiError = {
+        error: "API_NOT_CONFIGURED",
+        message: `Opinion API not configured. Please set the following environment variables in Vercel: ${missingVars.join(", ")}`,
+      };
+
+      const errorResponse = NextResponse.json(apiError, {
+        status: 503,
+        headers: getCorsHeaders(),
+      });
+      errorResponse.headers.set("X-Data-Source", "none");
+      return addSecurityHeaders(errorResponse);
     }
 
     // Return stale cached data if available and not too old
