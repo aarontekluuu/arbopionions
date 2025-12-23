@@ -86,62 +86,89 @@ async function fetchFromOpinionAPI(limit: number): Promise<EdgesResponse> {
     };
   }
 
-  // Log API response structure for debugging (only in development)
-  if (process.env.NODE_ENV === "development" && opinionMarkets.length > 0) {
+  // CRITICAL: Log FULL API response structure to identify topicId field
+  // This is essential for fixing market links
+  if (opinionMarkets.length > 0) {
     const sampleMarket = opinionMarkets[0];
-    console.log("[DEBUG] Opinion API Response Structure:", {
-      totalMarkets: opinionMarkets.length,
-      sampleMarket: {
-        market_id: sampleMarket.market_id,
-        topic_id: (sampleMarket as any).topic_id,
-        topicId: (sampleMarket as any).topicId,
-        topic_id_number: (sampleMarket as any).topic_id_number,
-        topicIdNumber: (sampleMarket as any).topicIdNumber,
-        topic: (sampleMarket as any).topic,
-        title: sampleMarket.title,
-        allKeys: Object.keys(sampleMarket),
-        fullSample: JSON.stringify(sampleMarket, null, 2).substring(0, 1000),
-      },
-    });
+    const fullResponse = JSON.stringify(sampleMarket, null, 2);
+    
+    console.log("[CRITICAL] Opinion API Response Structure (Full):");
+    console.log("=".repeat(80));
+    console.log(fullResponse);
+    console.log("=".repeat(80));
+    console.log("[CRITICAL] All keys in response:", Object.keys(sampleMarket));
+    console.log("[CRITICAL] Total markets fetched:", opinionMarkets.length);
+    
+    // Log first 3 markets for comparison
+    if (opinionMarkets.length >= 3) {
+      console.log("[CRITICAL] First 3 markets topicId fields:");
+      for (let i = 0; i < 3; i++) {
+        const m = opinionMarkets[i];
+        console.log(`  Market ${i + 1} (ID: ${m.market_id}):`, {
+          topic_id: (m as any).topic_id,
+          topicId: (m as any).topicId,
+          topic_id_number: (m as any).topic_id_number,
+          topicIdNumber: (m as any).topicIdNumber,
+          topic: (m as any).topic,
+          topic_id_string: (m as any).topic_id_string,
+          topicIdString: (m as any).topicIdString,
+        });
+      }
+    }
   }
 
   // Convert to internal Market type
   const markets: Market[] = opinionMarkets.map((m, index) => {
-    // Try to extract topic_id from various possible field names
-    // Check common variations: topic_id, topicId, topic_id_number, topicIdNumber
+    // Extract topic_id from API response
+    // Try all possible field names and variations
     const rawTopicId = 
       (m as any).topic_id ?? 
       (m as any).topicId ?? 
       (m as any).topic_id_number ??
       (m as any).topicIdNumber ??
+      (m as any).topic_id_string ??
+      (m as any).topicIdString ??
       (m as any).topic?.id ??
       (m as any).topic?.topic_id ??
+      (m as any).topic?.topic_id_number ??
       undefined;
 
     // Validate and convert to number
     let topicId: number | undefined = undefined;
+    let topicIdSource = 'NOT_FOUND';
+    
     if (rawTopicId !== undefined && rawTopicId !== null) {
-      const parsed = Number(rawTopicId);
+      // Handle string or number
+      const parsed = typeof rawTopicId === 'string' 
+        ? parseFloat(rawTopicId) 
+        : Number(rawTopicId);
+        
       if (!Number.isNaN(parsed) && Number.isFinite(parsed) && parsed > 0) {
-        topicId = parsed;
-      }
-    }
-
-    // Log topicId extraction for first few markets in development
-    if (process.env.NODE_ENV === "development" && index < 3) {
-      console.log(`[DEBUG] Market ${index + 1} topicId extraction:`, {
-        market_id: m.market_id,
-        title: m.title.substring(0, 50),
-        rawTopicId,
-        extractedTopicId: topicId,
-        topicIdSource: 
+        topicId = Math.floor(parsed); // Ensure integer
+        // Identify source for logging
+        topicIdSource = 
           (m as any).topic_id !== undefined ? 'topic_id' :
           (m as any).topicId !== undefined ? 'topicId' :
           (m as any).topic_id_number !== undefined ? 'topic_id_number' :
           (m as any).topicIdNumber !== undefined ? 'topicIdNumber' :
+          (m as any).topic_id_string !== undefined ? 'topic_id_string' :
+          (m as any).topicIdString !== undefined ? 'topicIdString' :
           (m as any).topic?.id !== undefined ? 'topic.id' :
           (m as any).topic?.topic_id !== undefined ? 'topic.topic_id' :
-          'NOT_FOUND',
+          (m as any).topic?.topic_id_number !== undefined ? 'topic.topic_id_number' :
+          'UNKNOWN';
+      }
+    }
+
+    // Log topicId extraction for first 10 markets (critical for debugging)
+    if (index < 10) {
+      console.log(`[TOPICID] Market ${index + 1}:`, {
+        market_id: m.market_id,
+        title: m.title.substring(0, 60),
+        rawTopicId,
+        extractedTopicId: topicId,
+        topicIdSource,
+        hasTopicId: !!topicId,
       });
     }
 
@@ -156,22 +183,78 @@ async function fetchFromOpinionAPI(limit: number): Promise<EdgesResponse> {
     };
   });
 
-  // Log summary of topicId extraction
-  if (process.env.NODE_ENV === "development") {
-    const marketsWithTopicId = markets.filter(m => m.topicId !== undefined).length;
-    console.log(`[DEBUG] TopicId extraction summary: ${marketsWithTopicId}/${markets.length} markets have topicId`);
+  // Log summary of topicId extraction (CRITICAL for debugging)
+  const marketsWithTopicId = markets.filter(m => m.topicId !== undefined).length;
+  const marketsWithoutTopicId = markets.length - marketsWithTopicId;
+  
+  console.log("[TOPICID SUMMARY]:", {
+    totalMarkets: markets.length,
+    marketsWithTopicId,
+    marketsWithoutTopicId,
+    topicIdSuccessRate: `${((marketsWithTopicId / markets.length) * 100).toFixed(1)}%`,
+  });
+  
+  // If we have markets without topicId, try to fetch them from detail endpoint
+  // This is a fallback strategy to get topicId
+  if (marketsWithoutTopicId > 0 && marketsWithoutTopicId <= 10) {
+    // Only fetch details if reasonable number (avoid too many API calls)
+    console.log(`[TOPICID] Attempting to fetch topicId for ${marketsWithoutTopicId} markets from detail endpoint...`);
     
-    // Log first 3 markets with their topicId (URL generation happens later in computeEdges)
-    if (markets.length > 0) {
-      markets.slice(0, 3).forEach((market, idx) => {
-        console.log(`[DEBUG] Market ${idx + 1} topicId details:`, {
-          marketId: market.marketId,
-          topicId: market.topicId,
-          title: market.marketTitle.substring(0, 50),
-          hasTopicId: market.topicId !== undefined,
-        });
-      });
-    }
+    const { fetchMarketDetails } = await import("@/lib/opinionClient");
+    const marketsToFix = markets.filter(m => m.topicId === undefined);
+    
+    // Fetch details for markets missing topicId (with concurrency limit)
+    const detailPromises = marketsToFix.slice(0, 10).map(async (market) => {
+      try {
+        const details = await fetchMarketDetails(market.marketId);
+        if (details) {
+          // Try to extract topicId from detail response
+          const detailTopicId = 
+            (details as any).topic_id ?? 
+            (details as any).topicId ?? 
+            (details as any).topic_id_number ??
+            (details as any).topicIdNumber ??
+            (details as any).topic?.id ??
+            (details as any).topic?.topic_id;
+            
+          if (detailTopicId !== undefined && detailTopicId !== null) {
+            const parsed = typeof detailTopicId === 'string' 
+              ? parseFloat(detailTopicId) 
+              : Number(detailTopicId);
+            if (!Number.isNaN(parsed) && Number.isFinite(parsed) && parsed > 0) {
+              market.topicId = Math.floor(parsed);
+              console.log(`[TOPICID] Fixed market ${market.marketId} with topicId ${market.topicId} from detail endpoint`);
+            }
+          }
+        }
+      } catch (error) {
+        // Silently fail - we'll use search URL fallback
+        if (process.env.NODE_ENV === "development") {
+          console.warn(`[TOPICID] Failed to fetch details for market ${market.marketId}:`, error);
+        }
+      }
+    });
+    
+    await Promise.all(detailPromises);
+    
+    // Recalculate after fixes
+    const finalMarketsWithTopicId = markets.filter(m => m.topicId !== undefined).length;
+    const finalMarketsWithoutTopicId = markets.length - finalMarketsWithTopicId;
+    
+    console.log("[TOPICID FINAL]:", {
+      marketsWithTopicId: finalMarketsWithTopicId,
+      marketsWithoutTopicId: finalMarketsWithoutTopicId,
+      fixed: finalMarketsWithTopicId - marketsWithTopicId,
+    });
+  }
+  
+  if (marketsWithoutTopicId > 0) {
+    console.warn(`[WARN] ${marketsWithoutTopicId} markets missing topicId - will use search URL fallback`);
+    // Log first few markets without topicId for debugging
+    const missingTopicId = markets.filter(m => m.topicId === undefined).slice(0, 5);
+    missingTopicId.forEach(m => {
+      console.warn(`  - Market ${m.marketId}: "${m.marketTitle.substring(0, 50)}"`);
+    });
   }
 
   // Collect all token IDs
@@ -271,7 +354,8 @@ async function fetchEdgesWithCoalescing(
         dataSource = "api";
       } else {
         // In production, fail if API not configured (don't use mock)
-        if (process.env.NODE_ENV === "production") {
+        const isProduction = process.env.NODE_ENV === "production" || process.env.VERCEL_ENV === "production";
+        if (isProduction) {
           const missingVars: string[] = [];
           if (!process.env.OPINION_API_KEY) {
             missingVars.push("OPINION_API_KEY");
@@ -281,7 +365,12 @@ async function fetchEdgesWithCoalescing(
           }
           
           const errorMessage = `Opinion API not configured. Missing environment variables: ${missingVars.join(", ")}`;
-          console.error(`[/api/edges] ${errorMessage}`);
+          console.error(`[/api/edges] ${errorMessage}`, {
+            NODE_ENV: process.env.NODE_ENV,
+            VERCEL_ENV: process.env.VERCEL_ENV,
+            hasApiKey: !!process.env.OPINION_API_KEY,
+            hasBaseUrl: !!process.env.OPINION_OPENAPI_BASE_URL,
+          });
           throw new Error(errorMessage);
         }
         
@@ -363,18 +452,51 @@ export async function GET(
     const limit = parseLimit(searchParams);
 
     // Check if API is configured before proceeding
-    if (!isOpinionConfigured() && process.env.NODE_ENV === "production") {
+    // In Vercel, check for production environment (NODE_ENV or VERCEL_ENV)
+    const isProduction = process.env.NODE_ENV === "production" || process.env.VERCEL_ENV === "production";
+    
+    if (!isOpinionConfigured() && isProduction) {
       const missingVars: string[] = [];
-      if (!process.env.OPINION_API_KEY) {
+      const presentVars: string[] = [];
+      
+      // Log environment info for debugging (without exposing values)
+      const hasApiKey = !!process.env.OPINION_API_KEY;
+      const hasBaseUrl = !!process.env.OPINION_OPENAPI_BASE_URL;
+      const apiKeyLength = process.env.OPINION_API_KEY?.length || 0;
+      const baseUrlLength = process.env.OPINION_OPENAPI_BASE_URL?.length || 0;
+      
+      console.error("[ENV DEBUG]", {
+        NODE_ENV: process.env.NODE_ENV,
+        VERCEL_ENV: process.env.VERCEL_ENV,
+        hasApiKey,
+        hasBaseUrl,
+        apiKeyLength,
+        baseUrlLength,
+        isProduction,
+      });
+      
+      if (!hasApiKey) {
         missingVars.push("OPINION_API_KEY");
+      } else {
+        presentVars.push("OPINION_API_KEY");
       }
-      if (!process.env.OPINION_OPENAPI_BASE_URL) {
+      
+      if (!hasBaseUrl) {
         missingVars.push("OPINION_OPENAPI_BASE_URL");
+      } else {
+        presentVars.push("OPINION_OPENAPI_BASE_URL");
       }
+      
+      let message = `Opinion API not configured. Please set the following environment variables in Vercel: ${missingVars.join(", ")}`;
+      if (presentVars.length > 0) {
+        message += ` (Note: ${presentVars.join(", ")} ${presentVars.length === 1 ? "is" : "are"} already set, but ${missingVars.length === 1 ? "this variable is" : "these variables are"} missing)`;
+      }
+      message += ". After adding variables, redeploy your Vercel application for changes to take effect.";
+      message += ` Current environment: ${process.env.VERCEL_ENV || process.env.NODE_ENV || "unknown"}`;
       
       const apiError: ApiError = {
         error: "API_NOT_CONFIGURED",
-        message: `Opinion API not configured. Please set the following environment variables in Vercel: ${missingVars.join(", ")}`,
+        message,
       };
 
       const errorResponse = NextResponse.json(apiError, {
@@ -426,16 +548,29 @@ export async function GET(
     // Check if error is about API not being configured
     if (errorMessage.includes("Opinion API not configured") || errorMessage.includes("Missing environment variables")) {
       const missingVars: string[] = [];
+      const presentVars: string[] = [];
+      
       if (!process.env.OPINION_API_KEY) {
         missingVars.push("OPINION_API_KEY");
+      } else {
+        presentVars.push("OPINION_API_KEY");
       }
+      
       if (!process.env.OPINION_OPENAPI_BASE_URL) {
         missingVars.push("OPINION_OPENAPI_BASE_URL");
+      } else {
+        presentVars.push("OPINION_OPENAPI_BASE_URL");
       }
+      
+      let message = `Opinion API not configured. Please set the following environment variables in Vercel: ${missingVars.join(", ")}`;
+      if (presentVars.length > 0) {
+        message += ` (Note: ${presentVars.join(", ")} ${presentVars.length === 1 ? "is" : "are"} already set, but ${missingVars.length === 1 ? "this variable is" : "these variables are"} missing)`;
+      }
+      message += ". After adding variables, redeploy your Vercel application for changes to take effect.";
       
       const apiError: ApiError = {
         error: "API_NOT_CONFIGURED",
-        message: `Opinion API not configured. Please set the following environment variables in Vercel: ${missingVars.join(", ")}`,
+        message,
       };
 
       const errorResponse = NextResponse.json(apiError, {
