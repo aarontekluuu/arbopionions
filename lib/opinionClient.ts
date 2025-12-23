@@ -366,9 +366,50 @@ export async function fetchTokenPrice(
       },
     });
 
-    const data: OpinionTokenPriceResponse = await response.json();
-    return data.data || null;
-  } catch {
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.warn(`[PRICES] Price API error for token ${tokenId}:`, {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText.substring(0, 200),
+      });
+      return null;
+    }
+
+    const data: any = await response.json();
+    
+    // Check for error response structure (errno, errmsg, result)
+    // errno: 0 means success, non-zero means error
+    if (data.errno !== undefined && data.errno !== 0) {
+      const errorMsg = data.errmsg || "Unknown API error";
+      console.warn(`[PRICES] Price API returned error for token ${tokenId}:`, {
+        errno: data.errno,
+        errmsg: errorMsg,
+      });
+      return null;
+    }
+    
+    // Handle different response structures:
+    // - Success with result.data (errno: 0, result: { data: {...} })
+    // - Success with data.data (legacy format)
+    // - Direct data object
+    let price: OpinionTokenPrice | null = null;
+    
+    if (data.result && data.result.data) {
+      // New format: { errno: 0, errmsg: "", result: { data: {...} } }
+      price = data.result.data;
+    } else if (data.data) {
+      // Legacy format: { data: {...} }
+      price = data.data;
+    } else if (data.token_id && data.price !== undefined) {
+      // Direct price object
+      price = data;
+    }
+    
+    return price;
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.warn(`[PRICES] Exception fetching price for token ${tokenId}:`, errorMessage);
     // Return null for individual price failures
     return null;
   }
