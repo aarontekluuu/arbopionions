@@ -46,7 +46,7 @@ export function getOpinionMarketUrl(
   // Only use topicId if it's a valid positive integer
   if (isValidTopicId(topicId)) {
     const validatedTopicId = typeof topicId === 'string' ? Number(topicId) : topicId;
-    const url = `${OPINION_BASE_URL}/detail?topicId=${validatedTopicId}&type=multi`;
+    const url = `${OPINION_BASE_URL}/detail?topicId=${validatedTopicId}`;
     
     // Log in development if we're using topicId (server-side only)
     if (typeof process !== 'undefined' && process.env?.NODE_ENV === "development") {
@@ -65,7 +65,7 @@ export function getOpinionMarketUrl(
   // This ensures we generate proper URLs matching Opinion.trade's structure
   if (isValidTopicId(marketId)) {
     const validatedMarketId = typeof marketId === 'string' ? Number(marketId) : marketId;
-    const url = `${OPINION_BASE_URL}/detail?topicId=${validatedMarketId}&type=multi`;
+    const url = `${OPINION_BASE_URL}/detail?topicId=${validatedMarketId}`;
     
     if (typeof process !== 'undefined' && process.env?.NODE_ENV === "development") {
       console.log(`[DEBUG] URL Generation - Using marketId as topicId:`, {
