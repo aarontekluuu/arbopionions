@@ -569,10 +569,26 @@ export async function fetchMarketDetails(
     }
     
     if (market) {
+      // Log full response structure for debugging
+      const allPossibleTopicIds = {
+        topic_id: (market as any).topic_id,
+        topicId: (market as any).topicId,
+        topic_id_number: (market as any).topic_id_number,
+        topicIdNumber: (market as any).topicIdNumber,
+        topic_id_string: (market as any).topic_id_string,
+        topicIdString: (market as any).topicIdString,
+        topic: (market as any).topic,
+        questionId: market.questionId,
+        marketId: market.marketId,
+      };
+      
       console.log(`[MARKET DETAILS] Fetched market ${marketId}:`, {
         hasTopicId: !!(market as any).topicId || !!(market as any).topic_id,
         topicId: (market as any).topicId || (market as any).topic_id,
         allKeys: Object.keys(market),
+        allPossibleTopicIds,
+        // Log first 500 chars of full response for debugging
+        responsePreview: JSON.stringify(market).substring(0, 500),
       });
     }
     

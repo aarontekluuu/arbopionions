@@ -370,6 +370,19 @@ async function fetchFromOpinionAPI(limit: number): Promise<EdgesResponse> {
     marketsMissingPrices: markets.filter(m => !pricesByToken[m.yesTokenId] || !pricesByToken[m.noTokenId]).length,
   });
 
+  // Log final topicId status before computing edges
+  const finalMarketsWithTopicId = markets.filter(m => m.topicId !== undefined).length;
+  console.log("[BEFORE EDGE COMPUTATION]:", {
+    totalMarkets: markets.length,
+    marketsWithTopicId: finalMarketsWithTopicId,
+    marketsWithoutTopicId: markets.length - finalMarketsWithTopicId,
+    sampleMarkets: markets.slice(0, 3).map(m => ({
+      marketId: m.marketId,
+      topicId: m.topicId,
+      title: m.marketTitle.substring(0, 40),
+    })),
+  });
+
   // Compute edges
   const edges = computeEdges(markets, pricesByToken);
 
