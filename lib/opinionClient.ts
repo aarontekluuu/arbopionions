@@ -405,13 +405,23 @@ export async function fetchTokenPrice(
     }
     
     // Handle different response structures:
+    // - Success with result directly containing price data (errno: 0, result: { tokenId, price, timestamp } })
     // - Success with result.data (errno: 0, result: { data: {...} })
     // - Success with data.data (legacy format)
     // - Direct data object
     let price: OpinionTokenPrice | null = null;
     
-    if (data.result && data.result.data) {
-      // New format: { errno: 0, errmsg: "", result: { data: {...} } }
+    if (data.result && data.result.tokenId && data.result.price !== undefined) {
+      // New format: { errno: 0, errmsg: "", result: { tokenId, price, timestamp, ... } }
+      // Map tokenId to token_id for our interface
+      price = {
+        token_id: data.result.tokenId,
+        price: data.result.price,
+        timestamp: data.result.timestamp || Date.now(),
+      };
+      console.log(`[PRICES] Using result format (direct) for token ${tokenId.substring(0, 20)}...`);
+    } else if (data.result && data.result.data) {
+      // Nested format: { errno: 0, errmsg: "", result: { data: {...} } }
       price = data.result.data;
       console.log(`[PRICES] Using result.data format for token ${tokenId.substring(0, 20)}...`);
     } else if (data.data) {
