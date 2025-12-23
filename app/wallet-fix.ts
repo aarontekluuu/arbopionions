@@ -16,21 +16,21 @@ if (typeof window !== "undefined") {
       const descriptor = Object.getOwnPropertyDescriptor(window, "ethereum");
       if (descriptor && !descriptor.configurable) {
         // If not configurable, we can't change it - just use what's there
-        return;
+        // Exit early by not executing the rest of the code
+      } else {
+        // Delete existing property if configurable
+        if (descriptor?.configurable) {
+          delete (window as any).ethereum;
+        }
+        
+        // Redefine as configurable
+        Object.defineProperty(window, "ethereum", {
+          value: originalEthereum,
+          writable: true,
+          configurable: true,
+          enumerable: true,
+        });
       }
-      
-      // Delete existing property if configurable
-      if (descriptor?.configurable) {
-        delete (window as any).ethereum;
-      }
-      
-      // Redefine as configurable
-      Object.defineProperty(window, "ethereum", {
-        value: originalEthereum,
-        writable: true,
-        configurable: true,
-        enumerable: true,
-      });
     } catch (e) {
       // Silently ignore errors - some wallets may have already set it as non-configurable
       // This is expected behavior when multiple wallets are installed
