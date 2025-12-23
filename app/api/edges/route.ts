@@ -227,14 +227,16 @@ async function fetchFromOpinionAPI(limit: number): Promise<EdgesResponse> {
   
   // If we have markets without topicId, try to fetch them from detail endpoint
   // This is a fallback strategy to get topicId
-  if (marketsWithoutTopicId > 0 && marketsWithoutTopicId <= 10) {
-    // Only fetch details if reasonable number (avoid too many API calls)
-    console.log(`[TOPICID] Attempting to fetch topicId for ${marketsWithoutTopicId} markets from detail endpoint...`);
+  // Always fetch market details to get topicId for proper URL generation
+  // This ensures links match Opinion.trade's URL structure
+  if (marketsWithoutTopicId > 0) {
+    console.log(`[TOPICID] Fetching topicId for ${marketsWithoutTopicId} markets from detail endpoint...`);
     
     const marketsToFix = markets.filter(m => m.topicId === undefined);
     
-    // Fetch details for markets missing topicId (with concurrency limit)
-    const detailPromises = marketsToFix.slice(0, 10).map(async (market) => {
+    // Fetch details for all markets missing topicId
+    // Use Promise.allSettled to handle failures gracefully
+    const detailPromises = marketsToFix.map(async (market) => {
       try {
         const details = await fetchMarketDetails(market.marketId);
         if (details) {
@@ -244,8 +246,11 @@ async function fetchFromOpinionAPI(limit: number): Promise<EdgesResponse> {
             (details as any).topicId ?? 
             (details as any).topic_id_number ??
             (details as any).topicIdNumber ??
+            (details as any).topic_id_string ??
+            (details as any).topicIdString ??
             (details as any).topic?.id ??
-            (details as any).topic?.topic_id;
+            (details as any).topic?.topic_id ??
+            (details as any).topic?.topic_id_number;
             
           if (detailTopicId !== undefined && detailTopicId !== null) {
             const parsed = typeof detailTopicId === 'string' 
@@ -253,19 +258,25 @@ async function fetchFromOpinionAPI(limit: number): Promise<EdgesResponse> {
               : Number(detailTopicId);
             if (!Number.isNaN(parsed) && Number.isFinite(parsed) && parsed > 0) {
               market.topicId = Math.floor(parsed);
-              console.log(`[TOPICID] Fixed market ${market.marketId} with topicId ${market.topicId} from detail endpoint`);
+              console.log(`[TOPICID] Fixed market ${market.marketId} "${market.marketTitle.substring(0, 40)}..." with topicId ${market.topicId} from detail endpoint`);
             }
+          } else {
+            console.warn(`[TOPICID] Market ${market.marketId} details fetched but no topicId found. Keys:`, Object.keys(details));
           }
+        } else {
+          console.warn(`[TOPICID] Failed to fetch details for market ${market.marketId} - details is null`);
         }
       } catch (error) {
-        // Silently fail - we'll use search URL fallback
-        if (process.env.NODE_ENV === "development") {
-          console.warn(`[TOPICID] Failed to fetch details for market ${market.marketId}:`, error);
-        }
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.warn(`[TOPICID] Exception fetching details for market ${market.marketId}:`, errorMessage);
       }
     });
     
-    await Promise.all(detailPromises);
+    // Wait for all detail fetches to complete
+    const results = await Promise.allSettled(detailPromises);
+    const successCount = results.filter(r => r.status === 'fulfilled').length;
+    const failureCount = results.filter(r => r.status === 'rejected').length;
+    console.log(`[TOPICID] Detail fetch complete: ${successCount} succeeded, ${failureCount} failed`);
     
     // Recalculate after fixes
     const finalMarketsWithTopicId = markets.filter(m => m.topicId !== undefined).length;
