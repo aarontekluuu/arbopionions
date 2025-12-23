@@ -357,6 +357,8 @@ export async function fetchTokenPrice(
   const url = new URL(`${baseUrl}/token/latest-price`);
   url.searchParams.set("token_id", tokenId);
 
+  console.log(`[PRICES] Fetching price for token: ${tokenId.substring(0, 20)}... from ${url.toString()}`);
+
   try {
     const response = await fetchWithRetry(url.toString(), {
       method: "GET",
@@ -365,6 +367,8 @@ export async function fetchTokenPrice(
         Accept: "application/json",
       },
     });
+
+    console.log(`[PRICES] Price API response status: ${response.status} ${response.statusText} for token ${tokenId.substring(0, 20)}...`);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -378,13 +382,24 @@ export async function fetchTokenPrice(
 
     const data: any = await response.json();
     
+    console.log(`[PRICES] Price API response structure for token ${tokenId.substring(0, 20)}...:`, {
+      hasData: !!data,
+      keys: Object.keys(data),
+      errno: data.errno,
+      errmsg: data.errmsg,
+      hasResult: !!data.result,
+      hasDataField: !!data.data,
+      responsePreview: JSON.stringify(data).substring(0, 300),
+    });
+    
     // Check for error response structure (errno, errmsg, result)
     // errno: 0 means success, non-zero means error
     if (data.errno !== undefined && data.errno !== 0) {
       const errorMsg = data.errmsg || "Unknown API error";
-      console.warn(`[PRICES] Price API returned error for token ${tokenId}:`, {
+      console.warn(`[PRICES] Price API returned error for token ${tokenId.substring(0, 20)}...:`, {
         errno: data.errno,
         errmsg: errorMsg,
+        fullResponse: JSON.stringify(data).substring(0, 500),
       });
       return null;
     }
@@ -398,12 +413,28 @@ export async function fetchTokenPrice(
     if (data.result && data.result.data) {
       // New format: { errno: 0, errmsg: "", result: { data: {...} } }
       price = data.result.data;
+      console.log(`[PRICES] Using result.data format for token ${tokenId.substring(0, 20)}...`);
     } else if (data.data) {
       // Legacy format: { data: {...} }
       price = data.data;
+      console.log(`[PRICES] Using data.data format for token ${tokenId.substring(0, 20)}...`);
     } else if (data.token_id && data.price !== undefined) {
       // Direct price object
       price = data;
+      console.log(`[PRICES] Using direct price object for token ${tokenId.substring(0, 20)}...`);
+    } else {
+      console.warn(`[PRICES] Could not extract price from response for token ${tokenId.substring(0, 20)}...:`, {
+        responseKeys: Object.keys(data),
+        responsePreview: JSON.stringify(data).substring(0, 500),
+      });
+    }
+    
+    if (price) {
+      console.log(`[PRICES] Successfully extracted price for token ${tokenId.substring(0, 20)}...:`, {
+        token_id: price.token_id,
+        price: price.price,
+        timestamp: price.timestamp,
+      });
     }
     
     return price;
