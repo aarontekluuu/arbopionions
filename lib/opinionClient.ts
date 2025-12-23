@@ -246,13 +246,14 @@ export async function fetchMarkets(
     const data: any = await response.json();
     
     // Check for error response structure (errno, errmsg, result)
-    if (data.errno !== undefined || data.errmsg !== undefined) {
+    // errno: 0 means success, non-zero means error
+    if (data.errno !== undefined && data.errno !== 0) {
       const errorMsg = data.errmsg || "Unknown API error";
-      const errorNo = data.errno || "unknown";
+      const errorNo = data.errno;
       console.error(`[Opinion API] API returned error:`, {
         errno: errorNo,
         errmsg: errorMsg,
-        fullResponse: JSON.stringify(data),
+        fullResponse: JSON.stringify(data).substring(0, 1000),
       });
       
       // Check if it's a geo-blocking error
@@ -263,8 +264,29 @@ export async function fetchMarkets(
       throw new Error(`Opinion API error ${errorNo}: ${errorMsg}`);
     }
     
-    // Handle different response structures: data.data or data.result
-    const markets = data.data || data.result || [];
+    // Handle different response structures:
+    // - Success with result.list (errno: 0, result: { list: [...] })
+    // - Success with data.data (legacy format)
+    // - Direct array (fallback)
+    let markets: OpinionMarket[] = [];
+    
+    if (data.result && Array.isArray(data.result.list)) {
+      // New format: { errno: 0, errmsg: "", result: { list: [...], total: ... } }
+      markets = data.result.list;
+      console.log(`[Opinion API] Using result.list format, found ${markets.length} markets`);
+    } else if (Array.isArray(data.data)) {
+      // Legacy format: { data: [...] }
+      markets = data.data;
+      console.log(`[Opinion API] Using data.data format, found ${markets.length} markets`);
+    } else if (Array.isArray(data.result)) {
+      // Alternative: { result: [...] }
+      markets = data.result;
+      console.log(`[Opinion API] Using result array format, found ${markets.length} markets`);
+    } else if (Array.isArray(data)) {
+      // Direct array
+      markets = data;
+      console.log(`[Opinion API] Using direct array format, found ${markets.length} markets`);
+    }
     
     console.log(`[Opinion API] Response parsed:`, {
       hasData: !!data,
