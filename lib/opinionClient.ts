@@ -301,7 +301,9 @@ export async function fetchMarkets(
       console.log(`[Opinion API] Fetched ${markets.length} markets from ${url.toString()}`);
       
       // Log response metadata if available
-      if (data.total !== undefined) {
+      if (data.result && typeof data.result.total === 'number') {
+        console.log(`[Opinion API] Total markets available: ${data.result.total}`);
+      } else if (data.total !== undefined) {
         console.log(`[Opinion API] Total markets available: ${data.total}`);
       }
       if (data.page !== undefined) {
