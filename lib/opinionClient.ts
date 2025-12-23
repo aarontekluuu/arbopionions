@@ -536,12 +536,50 @@ export async function fetchMarketDetails(
     });
 
     if (!response.ok) {
+      console.warn(`[MARKET DETAILS] Failed to fetch market ${marketId}: ${response.status} ${response.statusText}`);
       return null;
     }
 
-    const data: { data?: OpinionMarket } = await response.json();
-    return data.data || null;
-  } catch {
+    const data: any = await response.json();
+    
+    // Handle different response structures
+    let market: OpinionMarket | null = null;
+    
+    // Check for error response structure (errno, errmsg, result)
+    if (data.errno !== undefined && data.errno !== 0) {
+      const errorMsg = data.errmsg || "Unknown API error";
+      console.warn(`[MARKET DETAILS] API error for market ${marketId}:`, {
+        errno: data.errno,
+        errmsg: errorMsg,
+      });
+      return null;
+    }
+    
+    // Try different response structures
+    if (data.result && data.result.data) {
+      market = data.result.data;
+    } else if (data.result && (data.result.marketId || data.result.market_id)) {
+      // Result contains market directly
+      market = data.result;
+    } else if (data.data) {
+      market = data.data;
+    } else if (data.marketId || data.market_id) {
+      // Direct market object
+      market = data;
+    }
+    
+    if (market) {
+      console.log(`[MARKET DETAILS] Fetched market ${marketId}:`, {
+        hasTopicId: !!(market as any).topicId || !!(market as any).topic_id,
+        topicId: (market as any).topicId || (market as any).topic_id,
+        allKeys: Object.keys(market),
+      });
+    }
+    
+    return market;
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.warn(`[MARKET DETAILS] Exception fetching market ${marketId}:`, errorMessage);
     return null;
   }
 }

@@ -146,6 +146,8 @@ async function fetchFromOpinionAPI(limit: number): Promise<EdgesResponse> {
   const markets: Market[] = opinionMarkets.map((m, index) => {
     // Extract topic_id from API response
     // Try all possible field names and variations, including questionId
+    // NOTE: The API doesn't return topicId in the list endpoint, so we'll need to fetch details
+    // For now, try to extract from available fields
     const rawTopicId = 
       (m as any).topic_id ?? 
       (m as any).topicId ?? 
