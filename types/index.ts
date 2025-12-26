@@ -10,6 +10,10 @@ export type {
   TokenOrderbook,
   OrderbookResponse,
   SortOption,
+  PlatformSource,
+  PlatformSourceStatus,
+  MarketPriceSnapshot,
+  MarketsResponse,
 } from "@/lib/types";
 
 // Frontend-specific types
