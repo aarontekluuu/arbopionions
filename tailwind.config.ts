@@ -11,16 +11,17 @@ const config: Config = {
       colors: {
         terminal: {
           bg: "#0a0a0a",
-          surface: "#121212",
-          border: "#1e1e1e",
-          muted: "#404040",
-          text: "#e4e4e7",
-          dim: "#71717a",
-          accent: "#22c55e",
-          warn: "#eab308",
+          surface: "#f5f1e8",
+          border: "#e1d9c8",
+          muted: "#cfc7b8",
+          text: "#1a1a1a",
+          dim: "#6b665c",
+          primary: "#2d5016",
+          accent: "#6b46c1",
+          warn: "#f4d35e",
           danger: "#ef4444",
-          cyan: "#06b6d4",
-          purple: "#a855f7",
+          cyan: "#2d5016",
+          purple: "#6b46c1",
         },
       },
       fontFamily: {
@@ -37,4 +38,3 @@ const config: Config = {
   plugins: [],
 };
 export default config;
-
