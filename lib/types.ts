@@ -89,3 +89,34 @@ export interface OrderPlacement {
   side: "yes" | "no";
   url: string;
 }
+
+/** Platform market sources */
+export type PlatformSource = "opinion" | "kalshi" | "polymarket" | "predictfun";
+
+/** Platform source status */
+export type PlatformSourceStatus = "live" | "error";
+
+/** Normalized market price snapshot */
+export interface MarketPriceSnapshot {
+  platform: PlatformSource;
+  marketId: string;
+  marketTitle: string;
+  price: number;
+  updatedAt: number;
+  url?: string;
+}
+
+/** Market sources metadata */
+export interface PlatformSourceState {
+  status: PlatformSourceStatus;
+  error?: string;
+}
+
+/** Cross-platform markets response */
+export interface MarketsResponse {
+  updatedAt: number;
+  stale: boolean;
+  list: MarketPriceSnapshot[];
+  sources: Record<PlatformSource, PlatformSourceState>;
+  error?: string;
+}
