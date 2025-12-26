@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { ConnectWallet } from "./ConnectWallet";
 
 const navItems = [
-  { href: "/", label: "OPINION.TRADE ARB", shortcut: "O" },
+  { href: "/", label: "MARKET AGGREGATE", shortcut: "A" },
   { href: "/arbitrage", label: "CROSS-PLATFORM ARB", shortcut: "X" },
   { href: "/portfolio", label: "PORTFOLIO", shortcut: "P" },
 ];
@@ -24,7 +24,7 @@ export function NavBar() {
             </div>
             <div className="hidden sm:block">
               <h1 className="text-sm font-semibold tracking-wider text-terminal-text">
-                opinion.arb
+                pm.ag
               </h1>
               <p className="text-[10px] text-terminal-dim tracking-widest">
                 TERMINAL

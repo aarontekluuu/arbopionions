@@ -16,6 +16,7 @@
   --terminal-danger: #ef4444;
   --terminal-cyan: #06b6d4;
   --terminal-purple: #a855f7;
+  --terminal-magenta: #ec4899;
 }
 
 * {
@@ -86,4 +87,3 @@ body {
   background-size: 100% 4px;
   pointer-events: none;
 }
-

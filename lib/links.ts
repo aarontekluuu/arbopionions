@@ -2,6 +2,8 @@
  * URL generation utilities for external platforms
  */
 
+import type { Platform } from "./types";
+
 /**
  * Opinion.trade base URL
  */
@@ -131,17 +133,18 @@ export function getOpinionSearchUrl(query: string): string {
   return `${OPINION_BASE_URL}/markets?search=${encodeURIComponent(query)}`;
 }
 
+const KALSHI_BASE_URL = "https://kalshi.com";
+const POLYMARKET_BASE_URL = "https://polymarket.com";
+const PREDICTFUN_BASE_URL = "https://predict.fun";
+
 /**
  * Platform-specific market URL generators
  */
 export const platformUrls = {
   opinion: getOpinionMarketUrl,
-  
-  // Kalshi uses event tickers
-  kalshi: (eventTicker: string) => `https://kalshi.com/markets/${eventTicker}`,
-  
-  // Polymarket uses slug-based URLs
-  polymarket: (slug: string) => `https://polymarket.com/event/${slug}`,
+  kalshi: (eventTicker: string) => `${KALSHI_BASE_URL}/markets/${eventTicker}`,
+  polymarket: (slug: string) => `${POLYMARKET_BASE_URL}/event/${slug}`,
+  predictfun: (slug: string) => `${PREDICTFUN_BASE_URL}/market/${slug}`,
 };
 
 /**
@@ -152,10 +155,79 @@ export const platformOrderUrls = {
   
   // Future: Kalshi order URLs
   kalshi: (eventTicker: string, side: "yes" | "no") => 
-    `https://kalshi.com/markets/${eventTicker}?side=${side}`,
+    `${KALSHI_BASE_URL}/markets/${eventTicker}?side=${side}`,
   
   // Future: Polymarket order URLs
   polymarket: (slug: string, side: "yes" | "no") => 
-    `https://polymarket.com/event/${slug}?side=${side}`,
+    `${POLYMARKET_BASE_URL}/event/${slug}?side=${side}`,
+
+  // Predict.fun order URLs
+  predictfun: (slug: string, side: "yes" | "no") => 
+    `${PREDICTFUN_BASE_URL}/market/${slug}?side=${side}`,
 };
 
+export interface PlatformMarketUrlOptions {
+  marketId: number | string;
+  topicId?: number | string;
+  marketTitle?: string;
+  platformMarketId?: string;
+  marketUrl?: string;
+}
+
+export function getPlatformMarketUrl(
+  platform: Platform,
+  options: PlatformMarketUrlOptions
+): string {
+  if (options.marketUrl) {
+    return options.marketUrl;
+  }
+
+  if (platform === "opinion") {
+    return getOpinionMarketUrl(
+      options.marketId,
+      options.topicId,
+      options.marketTitle
+    );
+  }
+
+  if (platform === "kalshi") {
+    return options.platformMarketId
+      ? platformUrls.kalshi(options.platformMarketId)
+      : KALSHI_BASE_URL;
+  }
+
+  if (platform === "polymarket") {
+    return options.platformMarketId
+      ? platformUrls.polymarket(options.platformMarketId)
+      : POLYMARKET_BASE_URL;
+  }
+
+  if (platform === "predictfun") {
+    return options.platformMarketId
+      ? platformUrls.predictfun(options.platformMarketId)
+      : PREDICTFUN_BASE_URL;
+  }
+
+  return getOpinionBaseUrl();
+}
+
+export function getPlatformOrderUrl(
+  platform: Platform,
+  side: "yes" | "no",
+  options: PlatformMarketUrlOptions
+): string {
+  if (platform === "opinion") {
+    return getOpinionOrderUrl(
+      options.marketId,
+      side,
+      options.topicId,
+      options.marketTitle
+    );
+  }
+
+  if (options.platformMarketId) {
+    return platformOrderUrls[platform](options.platformMarketId, side);
+  }
+
+  return getPlatformMarketUrl(platform, options);
+}

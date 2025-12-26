@@ -3,22 +3,41 @@ const PLATFORMS = [
     name: "Opinion.trade",
     description: "Prediction market platform with real-time pricing",
     status: "LIVE",
-    color: "terminal-accent",
+    textClass: "text-terminal-accent",
+    badgeClass: "bg-terminal-accent/20 text-terminal-accent",
+    borderClass: "border-terminal-accent/50",
+    dotClass: "text-terminal-accent",
     features: ["Real-time prices", "Edge detection", "Auto-refresh"],
-  },
-  {
-    name: "Kalshi",
-    description: "CFTC-regulated US prediction market",
-    status: "COMING SOON",
-    color: "terminal-cyan",
-    features: ["USD settlement", "Regulated", "Event contracts"],
   },
   {
     name: "Polymarket",
     description: "Decentralized prediction market on Polygon",
-    status: "COMING SOON",
-    color: "terminal-purple",
+    status: "LIVE",
+    textClass: "text-terminal-purple",
+    badgeClass: "bg-terminal-purple/20 text-terminal-purple",
+    borderClass: "border-terminal-border",
+    dotClass: "text-terminal-purple",
     features: ["High liquidity", "Crypto settlement", "Wide market selection"],
+  },
+  {
+    name: "Predict.fun",
+    description: "Social prediction markets with fast settlement",
+    status: "LIVE",
+    textClass: "text-terminal-magenta",
+    badgeClass: "bg-terminal-magenta/20 text-terminal-magenta",
+    borderClass: "border-terminal-border",
+    dotClass: "text-terminal-magenta",
+    features: ["Creator markets", "Fast resolution", "Social discovery"],
+  },
+  {
+    name: "Kalshi",
+    description: "CFTC-regulated US prediction market",
+    status: "WIP",
+    textClass: "text-terminal-cyan",
+    badgeClass: "bg-terminal-cyan/20 text-terminal-cyan",
+    borderClass: "border-terminal-border",
+    dotClass: "text-terminal-cyan",
+    features: ["USD settlement", "Regulated", "Event contracts"],
   },
 ];
 
@@ -33,7 +52,7 @@ export default function ArbitragePage() {
           <span className="cursor-blink" />
         </h1>
         <p className="text-sm text-terminal-dim mt-1">
-          Detect and execute arbitrage opportunities across Opinion.trade, Kalshi, and Polymarket
+          Detect and execute arbitrage opportunities across Opinion.trade, Polymarket, Predict.fun, and Kalshi
         </p>
       </div>
 
@@ -43,21 +62,19 @@ export default function ArbitragePage() {
           <div
             key={platform.name}
             className={`bg-terminal-surface border rounded-lg overflow-hidden ${
-              platform.status === "LIVE" 
-                ? "border-terminal-accent/50" 
+              platform.status === "LIVE"
+                ? platform.borderClass
                 : "border-terminal-border"
             }`}
           >
             <div className="p-6 border-b border-terminal-border">
               <div className="flex items-center justify-between mb-2">
-                <h3 className={`text-lg font-semibold text-${platform.color}`}>
-                  {platform.name}
-                </h3>
+                <h3 className={`text-lg font-semibold ${platform.textClass}`}>{platform.name}</h3>
                 <span
                   className={`px-2 py-0.5 text-[10px] font-medium rounded ${
                     platform.status === "LIVE"
                       ? "bg-terminal-accent/20 text-terminal-accent"
-                      : `bg-${platform.color}/20 text-${platform.color}`
+                      : platform.badgeClass
                   }`}
                 >
                   {platform.status}
@@ -75,7 +92,7 @@ export default function ArbitragePage() {
                     key={i}
                     className="flex items-center gap-2 text-sm text-terminal-text"
                   >
-                    <span className={`text-${platform.color}`}>→</span>
+                    <span className={platform.dotClass}>→</span>
                     {feature}
                   </li>
                 ))}
@@ -108,7 +125,7 @@ export default function ArbitragePage() {
             CROSS-PLATFORM ARBITRAGE
           </h2>
           <p className="text-sm text-terminal-dim max-w-lg mb-6">
-            Detect price discrepancies between Opinion.trade, Kalshi, and Polymarket for the same
+            Detect price discrepancies between Opinion.trade, Polymarket, Predict.fun, and Kalshi for the same
             events. Execute complementary trades to lock in risk-free profits.
           </p>
 
@@ -117,10 +134,13 @@ export default function ArbitragePage() {
               <span className="text-terminal-accent">●</span> Opinion.trade prices
             </div>
             <div className="px-4 py-2 bg-terminal-bg border border-terminal-border rounded text-xs text-terminal-dim">
-              <span className="text-terminal-cyan">●</span> Kalshi prices
+              <span className="text-terminal-purple">●</span> Polymarket prices
             </div>
             <div className="px-4 py-2 bg-terminal-bg border border-terminal-border rounded text-xs text-terminal-dim">
-              <span className="text-terminal-purple">●</span> Polymarket prices
+              <span className="text-terminal-magenta">●</span> Predict.fun prices
+            </div>
+            <div className="px-4 py-2 bg-terminal-bg border border-terminal-border rounded text-xs text-terminal-dim">
+              <span className="text-terminal-cyan">●</span> Kalshi prices (WIP)
             </div>
           </div>
 
@@ -134,7 +154,7 @@ export default function ArbitragePage() {
               <div className="flex gap-3">
                 <span className="text-terminal-accent font-mono">01</span>
                 <span>
-                  Scan matching markets across Opinion.trade, Kalshi, and Polymarket in real-time
+                  Scan matching markets across Opinion.trade, Polymarket, Predict.fun, and Kalshi in real-time
                 </span>
               </div>
               <div className="flex gap-3">
@@ -159,7 +179,7 @@ export default function ArbitragePage() {
           </div>
 
           <div className="mt-8 px-4 py-2 bg-terminal-warn/10 border border-terminal-warn/30 rounded text-xs text-terminal-warn">
-            STATUS: KALSHI & POLYMARKET INTEGRATION IN DEVELOPMENT
+            STATUS: KALSHI INTEGRATION WIP (API KEY REQUIRED)
           </div>
         </div>
       </div>

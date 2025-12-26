@@ -3,7 +3,7 @@ import { bsc, polygon } from "wagmi/chains";
 import { injected, walletConnect } from "wagmi/connectors";
 
 /**
- * Supported chains for opinion.arb terminal
+ * Supported chains for pm.ag terminal
  * - BNB Chain (BSC): Opinion.trade
  * - Polygon: Polymarket
  */
@@ -26,8 +26,8 @@ export const wagmiConfig = createConfig({
           walletConnect({
             projectId: walletConnectProjectId,
             metadata: {
-              name: "opinion.arb terminal",
-              description: "Real-time prediction market arbitrage dashboard",
+              name: "pm.ag terminal",
+              description: "Real-time prediction market aggregation terminal",
               url: "https://arb-opionions.vercel.app",
               icons: ["https://arb-opionions.vercel.app/icon.svg"],
             },

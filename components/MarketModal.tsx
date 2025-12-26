@@ -2,7 +2,12 @@
 
 import { useEffect, useState, useCallback } from "react";
 import type { MarketEdge, TokenOrderbook } from "@/lib/types";
-import { getMarketPlatform, getPlatformInfo } from "@/lib/platforms";
+import { getPlatformMarketUrl } from "@/lib/links";
+import {
+  getMarketPlatform,
+  getPlatformInfo,
+  platformBadgeClasses,
+} from "@/lib/platforms";
 import { sanitizeHtml } from "@/lib/validation";
 
 interface MarketModalProps {
@@ -132,6 +137,16 @@ export function MarketModal({ market, isStale, onClose }: MarketModalProps) {
   };
 
   const hasEdge = market.edge > 0;
+  const platform = getMarketPlatform(market);
+  const platformInfo = getPlatformInfo(platform);
+  const platformUrl = getPlatformMarketUrl(platform, {
+    marketId: market.marketId,
+    topicId: market.topicId,
+    marketTitle: market.marketTitle,
+    platformMarketId: market.platformMarketId,
+    marketUrl: market.marketUrl,
+  });
+  const supportsInternalOrder = platform === "opinion";
   
   // Calculate profit for $1,000 deployment
   // Profit = deployment * (1 - sum) / sum when sum < 1
@@ -177,6 +192,9 @@ export function MarketModal({ market, isStale, onClose }: MarketModalProps) {
                   +{formatEdge(market.edge)} EDGE
                 </span>
               )}
+              <span className={`text-[10px] px-1.5 py-0.5 rounded ${platformBadgeClasses[platform]}`}>
+                {platformInfo.displayName}
+              </span>
             </div>
             <h2 
               className="text-lg font-medium text-terminal-text leading-snug"
@@ -353,33 +371,40 @@ export function MarketModal({ market, isStale, onClose }: MarketModalProps) {
               </h3>
             </div>
             <div className="p-4 space-y-3">
-              <a
-                href={`/trade?marketId=${market.marketId}`}
-                className="flex items-center justify-center gap-2 w-full py-4 bg-terminal-accent text-terminal-bg font-medium rounded-lg hover:bg-terminal-accent/90 transition-colors"
-              >
-                <span className="w-2 h-2 rounded-full bg-terminal-bg" />
-                <span>PLACE ORDER ON OPINION.ARB</span>
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
+              {supportsInternalOrder ? (
+                <a
+                  href={`/trade?marketId=${market.marketId}`}
+                  className="flex items-center justify-center gap-2 w-full py-4 bg-terminal-accent text-terminal-bg font-medium rounded-lg hover:bg-terminal-accent/90 transition-colors"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 7l5 5m0 0l-5 5m5-5H6"
-                  />
-                </svg>
-              </a>
+                  <span className="w-2 h-2 rounded-full bg-terminal-bg" />
+                  <span>PLACE ORDER ON PM.AG</span>
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 7l5 5m0 0l-5 5m5-5H6"
+                    />
+                  </svg>
+                </a>
+              ) : (
+                <div className="flex items-center justify-center gap-2 w-full py-4 bg-terminal-border text-terminal-dim font-medium rounded-lg">
+                  <span className="w-2 h-2 rounded-full bg-terminal-muted" />
+                  <span>PM.AG TRADING COMING SOON</span>
+                </div>
+              )}
               <a
-                href={market.marketUrl}
+                href={platformUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 w-full py-2 text-xs text-terminal-dim hover:text-terminal-text transition-colors underline"
               >
-                Or trade directly on {getPlatformInfo(getMarketPlatform(market)).displayName}
+                Or trade directly on {platformInfo.displayName}
               </a>
             </div>
           </div>

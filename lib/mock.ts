@@ -1,4 +1,4 @@
-import type { Market, TokenPrice } from "./types";
+import type { Market, Platform, TokenPrice } from "./types";
 
 /**
  * Simple seeded pseudo-random number generator (Mulberry32)
@@ -69,6 +69,7 @@ const MARKET_TITLES = [
 export function getMockMarkets(limit: number): Market[] {
   const clampedLimit = Math.max(1, Math.min(100, limit));
   const random = createSeededRandom(MOCK_SEED);
+  const platforms: Platform[] = ["opinion", "polymarket", "predictfun"];
 
   const markets: Market[] = [];
 
@@ -80,15 +81,22 @@ export function getMockMarkets(limit: number): Market[] {
     // This allows us to test URL generation
     const marketId = 1000 + i;
     const topicId = 73 + i; // Use different IDs to test topicId vs marketId
+    const platform = platforms[i % platforms.length];
+    const platformMarketId =
+      platform === "opinion"
+        ? undefined
+        : MARKET_TITLES[i].toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
 
     markets.push({
       marketId,
       topicId, // Include topicId in mock data for testing
       marketTitle: MARKET_TITLES[i],
-      yesTokenId: `token-${marketId}-yes`,
-      noTokenId: `token-${marketId}-no`,
+      yesTokenId: `${platform}-token-${marketId}-yes`,
+      noTokenId: `${platform}-token-${marketId}-no`,
       volume24h: volumeBase.toFixed(2),
       statusEnum: "ACTIVE",
+      platform,
+      platformMarketId,
     });
   }
 

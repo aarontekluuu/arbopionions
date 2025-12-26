@@ -21,6 +21,7 @@ const config: Config = {
           danger: "#ef4444",
           cyan: "#06b6d4",
           purple: "#a855f7",
+          magenta: "#ec4899",
         },
       },
       fontFamily: {
@@ -37,4 +38,3 @@ const config: Config = {
   plugins: [],
 };
 export default config;
-

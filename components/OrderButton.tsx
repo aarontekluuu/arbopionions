@@ -1,6 +1,6 @@
 "use client";
 
-import { getOpinionOrderUrl, getOpinionBaseUrl } from "@/lib/links";
+import { getPlatformOrderUrl } from "@/lib/links";
 import { getMarketPlatform, getPlatformInfo } from "@/lib/platforms";
 import type { MarketEdge } from "@/lib/types";
 
@@ -19,18 +19,18 @@ export function OrderButton({
 }: OrderButtonProps) {
   const platform = getMarketPlatform(market);
   const platformInfo = getPlatformInfo(platform);
+  const isDisabled = disabled || !platformInfo.orderEnabled;
 
   const handleClick = () => {
-    if (disabled) return;
+    if (isDisabled) return;
 
-    let url: string;
-
-    if (platform === "opinion") {
-      url = getOpinionOrderUrl(market.marketId, side, market.topicId, market.marketTitle);
-    } else {
-      // Future: Kalshi/Polymarket URLs
-      url = getOpinionBaseUrl(); // Fallback
-    }
+    const url = getPlatformOrderUrl(platform, side, {
+      marketId: market.marketId,
+      topicId: market.topicId,
+      marketTitle: market.marketTitle,
+      platformMarketId: market.platformMarketId,
+      marketUrl: market.marketUrl,
+    });
 
     window.open(url, "_blank", "noopener,noreferrer");
   };
@@ -40,7 +40,7 @@ export function OrderButton({
 
   // Platform-specific styling
   const getPlatformStyles = () => {
-    if (disabled) {
+    if (isDisabled) {
       return "bg-terminal-border text-terminal-dim cursor-not-allowed border border-terminal-border";
     }
 
@@ -51,6 +51,8 @@ export function OrderButton({
         return "bg-terminal-cyan/10 border border-terminal-cyan/30 text-terminal-cyan hover:bg-terminal-cyan/20";
       case "polymarket":
         return "bg-terminal-purple/10 border border-terminal-purple/30 text-terminal-purple hover:bg-terminal-purple/20";
+      case "predictfun":
+        return "bg-terminal-magenta/10 border border-terminal-magenta/30 text-terminal-magenta hover:bg-terminal-magenta/20";
       default:
         return "bg-terminal-border text-terminal-text hover:bg-terminal-muted border border-terminal-border";
     }
@@ -59,7 +61,7 @@ export function OrderButton({
   return (
     <button
       onClick={handleClick}
-      disabled={disabled}
+      disabled={isDisabled}
       className={`
         flex items-center justify-center gap-2 px-4 py-3 rounded-lg
         font-medium text-sm transition-all

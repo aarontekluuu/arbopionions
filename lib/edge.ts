@@ -1,5 +1,5 @@
 import type { Market, TokenPrice, MarketEdge } from "./types";
-import { getOpinionMarketUrl } from "./links";
+import { getPlatformMarketUrl } from "./links";
 
 /**
  * Safely parse a string to a number, returning 0 for invalid values
@@ -125,7 +125,14 @@ export function computeEdges(
         noTokenPrice.timestamp || now
       );
 
-      const marketUrl = getOpinionMarketUrl(market.marketId, market.topicId, market.marketTitle);
+      const platform = market.platform ?? "opinion";
+      const marketUrl = getPlatformMarketUrl(platform, {
+        marketId: market.marketId,
+        topicId: market.topicId,
+        marketTitle: market.marketTitle,
+        platformMarketId: market.platformMarketId,
+        marketUrl: market.marketUrl,
+      });
       
       // Log URL generation for first 10 markets (critical for debugging)
       if (index < 10) {
@@ -156,6 +163,8 @@ export function computeEdges(
         sum: parseFloat(sum.toFixed(6)),
         edge: parseFloat(edge.toFixed(6)),
         updatedAt,
+        platform,
+        platformMarketId: market.platformMarketId,
       };
     });
 

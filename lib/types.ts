@@ -1,5 +1,5 @@
 /**
- * Core types for the opinion.arb terminal
+ * Core types for the pm.ag terminal
  */
 
 /** Raw market data from Opinion API */
@@ -11,6 +11,9 @@ export interface Market {
   noTokenId: string;
   volume24h: string; // String for safe parsing of large numbers
   statusEnum: string;
+  platform?: Platform;
+  platformMarketId?: string; // Slug/event ticker for platform-specific URLs
+  marketUrl?: string; // Optional direct URL from upstream
 }
 
 /** Token price snapshot */
@@ -38,6 +41,8 @@ export interface MarketEdge {
   sum: number;
   edge: number;
   updatedAt: number;
+  platform?: Platform;
+  platformMarketId?: string;
 }
 
 /** API response structure */
@@ -80,7 +85,7 @@ export interface OrderbookResponse {
 export type SortOption = "volume" | "edge";
 
 /** Platform types */
-export type Platform = "opinion" | "kalshi" | "polymarket";
+export type Platform = "opinion" | "kalshi" | "polymarket" | "predictfun";
 
 /** Order placement data */
 export interface OrderPlacement {

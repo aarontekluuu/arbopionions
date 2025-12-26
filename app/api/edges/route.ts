@@ -6,6 +6,7 @@ import { apiRateLimiter, getClientIdentifier } from "@/lib/rateLimit";
 import { validateLimitParam } from "@/lib/validation";
 import { getCorsHeaders, sanitizeError, addSecurityHeaders } from "@/lib/security";
 import { fetchMarkets, fetchTokenPrices, fetchMarketDetails } from "@/lib/opinionClient";
+import { normalizePlatform } from "@/lib/platforms";
 
 // Force function execution in São Paulo, Brazil to avoid geo-blocking
 export const runtime = 'nodejs';
@@ -203,6 +204,21 @@ async function fetchFromOpinionAPI(limit: number): Promise<EdgesResponse> {
       });
     }
 
+    const platform = normalizePlatform(
+      (m as any).platform ?? (m as any).source ?? (m as any).marketPlatform
+    ) ?? "opinion";
+    const platformMarketId =
+      (m as any).platformMarketId ??
+      (m as any).slug ??
+      (m as any).eventTicker ??
+      (m as any).ticker ??
+      (m as any).market_slug ??
+      undefined;
+    const marketUrl =
+      (m as any).marketUrl ??
+      (m as any).url ??
+      undefined;
+
     return {
       marketId: m.marketId,
       topicId,
@@ -211,6 +227,9 @@ async function fetchFromOpinionAPI(limit: number): Promise<EdgesResponse> {
       noTokenId: m.noTokenId,
       volume24h: m.volume24h,
       statusEnum: m.statusEnum || String(m.status),
+      platform,
+      platformMarketId,
+      marketUrl,
     };
   });
 

@@ -96,7 +96,7 @@ function TradePageContent() {
           PLACE ORDER
         </h1>
         <p className="text-sm text-terminal-dim mt-1">
-          Execute a trade on Opinion.trade through our platform
+          Execute a trade on Opinion.trade through pm.ag
         </p>
       </div>
 
@@ -140,4 +140,3 @@ export default function TradePage() {
     </Suspense>
   );
 }
-

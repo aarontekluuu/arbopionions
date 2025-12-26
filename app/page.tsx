@@ -25,7 +25,9 @@ export default function MarketsPage() {
   // Check if first visit and redirect to welcome
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const hasVisited = localStorage.getItem("opinion-arb-visited");
+      const hasVisited =
+        localStorage.getItem("pmag-visited") ||
+        localStorage.getItem("opinion-arb-visited");
       if (!hasVisited) {
         router.push("/welcome");
       }
@@ -149,11 +151,11 @@ export default function MarketsPage() {
       <div className="mb-6">
         <h1 className="text-xl font-semibold text-terminal-text flex items-center gap-2">
           <span className="text-terminal-accent">&gt;</span>
-          OPINION.TRADE ARBITRAGE
+          PM.AG AGGREGATE TERMINAL
           <span className="cursor-blink" />
         </h1>
         <p className="text-sm text-terminal-dim mt-1">
-          Real-time prediction market opportunities ranked by {sortBy === "volume" ? "volume" : "edge"}
+          Aggregated prediction market opportunities ranked by {sortBy === "volume" ? "volume" : "edge"}
         </p>
       </div>
 

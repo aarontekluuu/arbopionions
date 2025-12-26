@@ -7,8 +7,8 @@ import { NavBar } from "@/components/NavBar";
 import { StatusIndicator } from "@/components/StatusIndicator";
 
 export const metadata: Metadata = {
-  title: "opinion.arb terminal",
-  description: "Real-time prediction market arbitrage dashboard",
+  title: "pm.ag terminal",
+  description: "Real-time prediction market aggregation terminal",
 };
 
 export default function RootLayout({
@@ -26,7 +26,7 @@ export default function RootLayout({
               <main className="flex-1 p-4 md:p-6">{children}</main>
               <footer className="border-t border-terminal-border px-4 py-3 text-xs text-terminal-dim">
                 <div className="flex items-center justify-between max-w-7xl mx-auto">
-                  <span>opinion.arb terminal v0.1.0</span>
+                  <span>pm.ag terminal v0.1.0</span>
                   <span className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-terminal-accent animate-pulse" />
                     SYSTEM ONLINE

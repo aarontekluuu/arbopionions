@@ -1,6 +1,11 @@
 "use client";
 
 import type { MarketEdge } from "@/lib/types";
+import {
+  getMarketPlatform,
+  getPlatformInfo,
+  platformTextClasses,
+} from "@/lib/platforms";
 import { sanitizeHtml } from "@/lib/validation";
 
 interface MarketCardProps {
@@ -12,6 +17,8 @@ interface MarketCardProps {
 export function MarketCard({ market, isStale = false, onClick }: MarketCardProps) {
   const hasEdge = market.edge > 0;
   const edgePercent = market.edge * 100;
+  const platform = getMarketPlatform(market);
+  const platformInfo = getPlatformInfo(platform);
   const edgeColor =
     edgePercent >= 3
       ? "text-terminal-accent"
@@ -68,9 +75,14 @@ export function MarketCard({ market, isStale = false, onClick }: MarketCardProps
             dangerouslySetInnerHTML={{ __html: sanitizeHtml(market.marketTitle) }}
           />
         </div>
-        <div className="flex items-center gap-2 mt-2">
+        <div className="flex items-center gap-2 mt-2 flex-wrap">
           <span className="text-[10px] px-1.5 py-0.5 rounded bg-terminal-border text-terminal-dim uppercase tracking-wider">
             #{market.marketId}
+          </span>
+          <span
+            className={`text-[10px] px-1.5 py-0.5 rounded bg-terminal-bg uppercase tracking-wider ${platformTextClasses[platform]}`}
+          >
+            {platformInfo.displayName}
           </span>
           <span className="text-[10px] text-terminal-dim">
             24h: {formatVolume(market.volume24h)}
