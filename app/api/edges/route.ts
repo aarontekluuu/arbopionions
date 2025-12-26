@@ -7,6 +7,7 @@ import { validateLimitParam } from "@/lib/validation";
 import { getCorsHeaders, sanitizeError, addSecurityHeaders } from "@/lib/security";
 import { fetchMarkets, fetchTokenPrices, fetchMarketDetails } from "@/lib/opinionClient";
 import { normalizePlatform } from "@/lib/platforms";
+import { fetchExternalBundles } from "@/lib/externalMarkets";
 
 // Force function execution in São Paulo, Brazil to avoid geo-blocking
 export const runtime = 'nodejs';
@@ -356,6 +357,25 @@ async function fetchFromOpinionAPI(limit: number): Promise<EdgesResponse> {
       timestamp: price.timestamp,
     };
   }
+
+  // Fetch external markets (Polymarket, Predict.fun)
+  const externalBundles = await fetchExternalBundles(limit);
+  const externalMarkets = externalBundles.flatMap((bundle) => bundle.markets);
+  const externalPrices = externalBundles.reduce<Record<string, TokenPrice>>(
+    (acc, bundle) => Object.assign(acc, bundle.pricesByToken),
+    {}
+  );
+
+  if (externalMarkets.length > 0) {
+    console.log("[AGGREGATE] External market summary:", {
+      totalBundles: externalBundles.length,
+      markets: externalMarkets.length,
+      platforms: externalBundles.map((bundle) => bundle.stats),
+    });
+  }
+
+  markets.push(...externalMarkets);
+  Object.assign(pricesByToken, externalPrices);
 
   // Log price statistics
   if (Object.keys(pricesByToken).length > 0) {

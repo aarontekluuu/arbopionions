@@ -3,6 +3,7 @@ import { fetchMarkets, fetchTokenPrices } from "@/lib/opinionClient";
 import { computeEdges } from "@/lib/edge";
 import type { Market } from "@/lib/types";
 import { normalizePlatform } from "@/lib/platforms";
+import { fetchExternalBundles } from "@/lib/externalMarkets";
 
 /**
  * Debug endpoint to inspect raw API responses and edge computation
@@ -58,6 +59,17 @@ export async function GET(request: NextRequest) {
       };
     }
 
+    // Fetch external markets
+    const externalBundles = await fetchExternalBundles(limit);
+    const externalMarkets = externalBundles.flatMap((bundle) => bundle.markets);
+    const externalPrices = externalBundles.reduce<Record<string, { tokenId: string; price: string; timestamp: number }>>(
+      (acc, bundle) => Object.assign(acc, bundle.pricesByToken),
+      {}
+    );
+
+    markets.push(...externalMarkets);
+    Object.assign(pricesByToken, externalPrices);
+
     // Compute edges
     const edges = computeEdges(markets, pricesByToken);
 
@@ -68,6 +80,7 @@ export async function GET(request: NextRequest) {
         converted: markets.length,
         withTopicId: markets.filter(m => m.topicId !== undefined).length,
       },
+      external: externalBundles.map((bundle) => bundle.stats),
       prices: {
         tokenIdsRequested: uniqueTokenIds.length,
         pricesFetched: Object.keys(opinionPrices).length,
