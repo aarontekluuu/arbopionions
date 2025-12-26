@@ -5,8 +5,8 @@ import { usePathname } from "next/navigation";
 import { ConnectWallet } from "./ConnectWallet";
 
 const navItems = [
-  { href: "/", label: "OPINION.TRADE ARB", shortcut: "O" },
-  { href: "/arbitrage", label: "CROSS-PLATFORM ARB", shortcut: "X" },
+  { href: "/arbitrage", label: "AGGREGATOR", shortcut: "A" },
+  { href: "/arb", label: "ARB", shortcut: "R" },
   { href: "/portfolio", label: "PORTFOLIO", shortcut: "P" },
 ];
 
@@ -18,13 +18,13 @@ export function NavBar() {
       <div className="max-w-7xl mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-3 group">
+          <Link href="/arbitrage" className="flex items-center gap-3 group">
             <div className="w-8 h-8 rounded bg-terminal-accent/20 border border-terminal-accent/50 flex items-center justify-center group-hover:bg-terminal-accent/30 transition-colors">
               <span className="text-terminal-accent font-bold text-sm">⚡</span>
             </div>
             <div className="hidden sm:block">
               <h1 className="text-sm font-semibold tracking-wider text-terminal-text">
-                opinion.arb
+                pm.aggregator
               </h1>
               <p className="text-[10px] text-terminal-dim tracking-widest">
                 TERMINAL

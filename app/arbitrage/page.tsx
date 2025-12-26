@@ -1,167 +1,235 @@
-const PLATFORMS = [
-  {
-    name: "Opinion.trade",
-    description: "Prediction market platform with real-time pricing",
-    status: "LIVE",
-    color: "terminal-accent",
-    features: ["Real-time prices", "Edge detection", "Auto-refresh"],
-  },
-  {
-    name: "Kalshi",
-    description: "CFTC-regulated US prediction market",
-    status: "COMING SOON",
-    color: "terminal-cyan",
-    features: ["USD settlement", "Regulated", "Event contracts"],
-  },
-  {
-    name: "Polymarket",
-    description: "Decentralized prediction market on Polygon",
-    status: "COMING SOON",
-    color: "terminal-purple",
-    features: ["High liquidity", "Crypto settlement", "Wide market selection"],
-  },
-];
+"use client";
+
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import type { MarketGroup, MarketsResponse, PlatformSourceStatus } from "@/types";
+
+const PLATFORMS = ["opinion", "kalshi", "polymarket", "predictfun"] as const;
+const PLATFORM_LABELS: Record<(typeof PLATFORMS)[number], string> = {
+  opinion: "Opinion.trade",
+  kalshi: "Kalshi",
+  polymarket: "Polymarket",
+  predictfun: "Predict.fun",
+};
+
+const PLATFORM_COLORS: Record<(typeof PLATFORMS)[number], string> = {
+  opinion: "text-terminal-accent",
+  kalshi: "text-terminal-cyan",
+  polymarket: "text-terminal-purple",
+  predictfun: "text-terminal-warn",
+};
+
+async function fetchMarkets(limit: number): Promise<MarketsResponse> {
+  const res = await fetch(`/api/markets?limit=${limit}`);
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: "Request failed" }));
+    throw new Error(error.message || "Failed to fetch markets");
+  }
+  return res.json();
+}
+
+function formatPrice(price: number | null): string {
+  if (price === null || !Number.isFinite(price)) {
+    return "—";
+  }
+  return price.toFixed(2);
+}
+
+function SourceStatusBadge({ source }: { source: PlatformSourceStatus }) {
+  const statusStyles =
+    source.status === "live"
+      ? "bg-terminal-accent/20 text-terminal-accent border-terminal-accent/40"
+      : source.status === "error"
+        ? "bg-terminal-warn/20 text-terminal-warn border-terminal-warn/40"
+        : "bg-terminal-border/40 text-terminal-dim border-terminal-border";
+
+  return (
+    <div className={`px-3 py-1 border rounded text-xs flex items-center gap-2 ${statusStyles}`}>
+      <span className="uppercase tracking-wider text-[10px]">{source.status}</span>
+      <span className="font-medium">{PLATFORM_LABELS[source.platform]}</span>
+      {source.message && <span className="text-[10px] text-terminal-dim">{source.message}</span>}
+    </div>
+  );
+}
 
 export default function ArbitragePage() {
+  const [search, setSearch] = useState("");
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
+
+  const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
+    queryKey: ["aggregated-markets"],
+    queryFn: () => fetchMarkets(60),
+    refetchInterval: 20000,
+  });
+
+  const tags = useMemo(() => {
+    if (!data?.groups) {
+      return [];
+    }
+    const set = new Set<string>();
+    data.groups.forEach((group) => group.tags.forEach((tag) => set.add(tag)));
+    return Array.from(set).sort();
+  }, [data?.groups]);
+
+  const filteredGroups = useMemo(() => {
+    if (!data?.groups) {
+      return [];
+    }
+    return data.groups.filter((group) => {
+      const matchesSearch = search
+        ? group.title.toLowerCase().includes(search.toLowerCase())
+        : true;
+      const matchesTag = selectedTag ? group.tags.includes(selectedTag) : true;
+      return matchesSearch && matchesTag;
+    });
+  }, [data?.groups, search, selectedTag]);
+
   return (
     <div className="max-w-7xl mx-auto">
-      {/* Header */}
       <div className="mb-6">
         <h1 className="text-xl font-semibold text-terminal-text flex items-center gap-2">
           <span className="text-terminal-cyan">&gt;</span>
-          CROSS-PLATFORM ARBITRAGE
+          AGGREGATOR
           <span className="cursor-blink" />
         </h1>
         <p className="text-sm text-terminal-dim mt-1">
-          Detect and execute arbitrage opportunities across Opinion.trade, Kalshi, and Polymarket
+          Compare YES prices across Opinion.trade, Kalshi, Polymarket, and Predict.fun.
         </p>
       </div>
 
-      {/* Platform Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        {PLATFORMS.map((platform) => (
-          <div
-            key={platform.name}
-            className={`bg-terminal-surface border rounded-lg overflow-hidden ${
-              platform.status === "LIVE" 
-                ? "border-terminal-accent/50" 
-                : "border-terminal-border"
-            }`}
-          >
-            <div className="p-6 border-b border-terminal-border">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className={`text-lg font-semibold text-${platform.color}`}>
-                  {platform.name}
-                </h3>
-                <span
-                  className={`px-2 py-0.5 text-[10px] font-medium rounded ${
-                    platform.status === "LIVE"
-                      ? "bg-terminal-accent/20 text-terminal-accent"
-                      : `bg-${platform.color}/20 text-${platform.color}`
-                  }`}
-                >
-                  {platform.status}
-                </span>
-              </div>
-              <p className="text-sm text-terminal-dim">{platform.description}</p>
-            </div>
-            <div className="p-6">
-              <div className="text-[10px] text-terminal-dim tracking-wider uppercase mb-3">
-                Features
-              </div>
-              <ul className="space-y-2">
-                {platform.features.map((feature, i) => (
-                  <li
-                    key={i}
-                    className="flex items-center gap-2 text-sm text-terminal-text"
-                  >
-                    <span className={`text-${platform.color}`}>→</span>
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Arbitrage Module Info */}
-      <div className="bg-terminal-surface border border-terminal-border rounded-lg p-8">
-        <div className="flex flex-col items-center justify-center py-8 text-center">
-          <div className="w-16 h-16 rounded-full bg-terminal-cyan/10 border border-terminal-cyan/30 flex items-center justify-center mb-6">
-            <svg
-              className="w-8 h-8 text-terminal-cyan"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
+      <div className="mb-6 flex flex-col gap-4">
+        <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="bg-terminal-surface border border-terminal-border rounded px-3 py-2 flex items-center gap-2 w-full md:w-80">
+              <span className="text-terminal-dim text-xs uppercase tracking-wider">Search</span>
+              <input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="BTC, Fed, election..."
+                className="bg-transparent text-sm text-terminal-text placeholder:text-terminal-dim focus:outline-none w-full"
               />
-            </svg>
+            </div>
+            <button
+              onClick={() => refetch()}
+              className="px-3 py-2 text-xs uppercase tracking-wider border border-terminal-border rounded text-terminal-dim hover:text-terminal-text hover:border-terminal-accent"
+            >
+              {isFetching ? "Refreshing..." : "Refresh"}
+            </button>
           </div>
-
-          <h2 className="text-lg font-medium text-terminal-text mb-2">
-            CROSS-PLATFORM ARBITRAGE
-          </h2>
-          <p className="text-sm text-terminal-dim max-w-lg mb-6">
-            Detect price discrepancies between Opinion.trade, Kalshi, and Polymarket for the same
-            events. Execute complementary trades to lock in risk-free profits.
-          </p>
-
-          <div className="flex flex-wrap justify-center gap-3 mb-8">
-            <div className="px-4 py-2 bg-terminal-bg border border-terminal-border rounded text-xs text-terminal-dim">
-              <span className="text-terminal-accent">●</span> Opinion.trade prices
-            </div>
-            <div className="px-4 py-2 bg-terminal-bg border border-terminal-border rounded text-xs text-terminal-dim">
-              <span className="text-terminal-cyan">●</span> Kalshi prices
-            </div>
-            <div className="px-4 py-2 bg-terminal-bg border border-terminal-border rounded text-xs text-terminal-dim">
-              <span className="text-terminal-purple">●</span> Polymarket prices
-            </div>
-          </div>
-
-          {/* How it works */}
-          <div className="w-full max-w-2xl bg-terminal-bg border border-terminal-border rounded-lg p-6 text-left">
-            <h3 className="text-sm font-medium text-terminal-text mb-4 flex items-center gap-2">
-              <span className="text-terminal-accent">&gt;</span>
-              HOW IT WORKS
-            </h3>
-            <div className="space-y-3 text-xs text-terminal-dim">
-              <div className="flex gap-3">
-                <span className="text-terminal-accent font-mono">01</span>
-                <span>
-                  Scan matching markets across Opinion.trade, Kalshi, and Polymarket in real-time
-                </span>
-              </div>
-              <div className="flex gap-3">
-                <span className="text-terminal-accent font-mono">02</span>
-                <span>
-                  Identify when YES on Platform A + NO on Platform B {"<"} $1.00
-                </span>
-              </div>
-              <div className="flex gap-3">
-                <span className="text-terminal-accent font-mono">03</span>
-                <span>
-                  Calculate potential profit after fees and slippage
-                </span>
-              </div>
-              <div className="flex gap-3">
-                <span className="text-terminal-accent font-mono">04</span>
-                <span>
-                  Execute simultaneous trades to lock in arbitrage
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-8 px-4 py-2 bg-terminal-warn/10 border border-terminal-warn/30 rounded text-xs text-terminal-warn">
-            STATUS: KALSHI & POLYMARKET INTEGRATION IN DEVELOPMENT
+          <div className="text-xs text-terminal-dim">
+            {data?.updatedAt ? `Updated ${new Date(data.updatedAt).toLocaleTimeString()}` : "Waiting for data"}
           </div>
         </div>
+
+        <div className="flex flex-wrap gap-2">
+          <button
+            className={`px-3 py-1 rounded text-xs border ${
+              !selectedTag ? "border-terminal-accent text-terminal-accent" : "border-terminal-border text-terminal-dim"
+            }`}
+            onClick={() => setSelectedTag(null)}
+          >
+            All tags
+          </button>
+          {tags.map((tag) => (
+            <button
+              key={tag}
+              className={`px-3 py-1 rounded text-xs border ${
+                selectedTag === tag
+                  ? "border-terminal-accent text-terminal-accent"
+                  : "border-terminal-border text-terminal-dim"
+              }`}
+              onClick={() => setSelectedTag(tag)}
+            >
+              {tag}
+            </button>
+          ))}
+        </div>
+
+        {data?.sources && (
+          <div className="flex flex-wrap gap-2">
+            {data.sources.map((source) => (
+              <SourceStatusBadge key={source.platform} source={source} />
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="bg-terminal-surface border border-terminal-border rounded-lg overflow-hidden">
+        <div className="grid grid-cols-12 gap-4 px-4 py-3 border-b border-terminal-border text-[10px] text-terminal-dim uppercase tracking-wider">
+          <div className="col-span-6">Market</div>
+          <div className="col-span-2 text-right">Spread</div>
+          {PLATFORMS.map((platform) => (
+            <div key={platform} className="col-span-1 text-right">
+              {PLATFORM_LABELS[platform]}
+            </div>
+          ))}
+        </div>
+
+        {isLoading && (
+          <div className="p-6 text-sm text-terminal-dim">Loading markets...</div>
+        )}
+
+        {isError && (
+          <div className="p-6 text-sm text-terminal-warn">
+            {error instanceof Error ? error.message : "Failed to load markets."}
+          </div>
+        )}
+
+        {!isLoading && !isError && filteredGroups.length === 0 && (
+          <div className="p-6 text-sm text-terminal-dim">No markets match your filters.</div>
+        )}
+
+        {filteredGroups.map((group) => {
+          const priceMap = new Map(group.prices.map((price) => [price.platform, price]));
+          const numericPrices = group.prices
+            .map((price) => price.price)
+            .filter((price): price is number => price !== null && Number.isFinite(price));
+          const spread =
+            numericPrices.length >= 2 ? Math.max(...numericPrices) - Math.min(...numericPrices) : null;
+
+          return (
+            <div
+              key={group.groupId}
+              className="grid grid-cols-12 gap-4 px-4 py-4 border-b border-terminal-border last:border-b-0"
+            >
+              <div className="col-span-6">
+                <div className="text-sm text-terminal-text font-medium">{group.title}</div>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {group.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="px-2 py-0.5 text-[10px] uppercase tracking-wider border border-terminal-border text-terminal-dim rounded"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className="col-span-2 text-right text-sm text-terminal-text">
+                {spread !== null ? spread.toFixed(2) : "—"}
+              </div>
+              {PLATFORMS.map((platform) => {
+                const price = priceMap.get(platform);
+                return (
+                  <div key={platform} className={`col-span-1 text-right text-sm ${PLATFORM_COLORS[platform]}`}>
+                    {price?.url ? (
+                      <a
+                        href={price.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="hover:underline"
+                      >
+                        {formatPrice(price.price)}
+                      </a>
+                    ) : (
+                      formatPrice(price?.price ?? null)
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

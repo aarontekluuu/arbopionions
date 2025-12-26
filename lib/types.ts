@@ -82,6 +82,43 @@ export type SortOption = "volume" | "edge";
 /** Platform types */
 export type Platform = "opinion" | "kalshi" | "polymarket";
 
+export type PlatformId = "opinion" | "kalshi" | "polymarket" | "predictfun";
+
+export interface MarketQuote {
+  platform: PlatformId;
+  title: string;
+  price: number | null;
+  url?: string;
+  sourceId?: string;
+}
+
+export interface MarketGroup {
+  groupId: string;
+  title: string;
+  tags: string[];
+  platforms: PlatformId[];
+  prices: Array<{
+    platform: PlatformId;
+    price: number | null;
+    url?: string;
+    sourceId?: string;
+  }>;
+}
+
+export interface PlatformSourceStatus {
+  platform: PlatformId;
+  status: "live" | "mock" | "error";
+  message?: string;
+}
+
+export interface MarketsResponse {
+  updatedAt: number;
+  stale: boolean;
+  groups: MarketGroup[];
+  sources: PlatformSourceStatus[];
+  error?: string;
+}
+
 /** Order placement data */
 export interface OrderPlacement {
   marketId: number;
