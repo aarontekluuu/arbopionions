@@ -297,10 +297,11 @@ export async function fetchLimitlessPrices(
   limit: number
 ): Promise<MarketPriceSnapshot[]> {
   try {
+    const effectiveLimit = Math.min(limit, 25);
     const baseUrl = (process.env.LIMITLESS_API_BASE_URL ||
       "https://api.limitless.exchange").replace(/\/$/, "");
     const url = new URL(`${baseUrl}/markets/active`);
-    url.searchParams.set("limit", String(limit));
+    url.searchParams.set("limit", String(effectiveLimit));
 
     const headers: Record<string, string> = {
       Accept: "application/json",
