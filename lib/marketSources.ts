@@ -54,9 +54,9 @@ function normalizeTimestamp(raw: unknown): number {
   return parsed;
 }
 
-function parseDateToTimestamp(raw: unknown): number | null {
+function parseDateToTimestamp(raw: unknown): number | undefined {
   if (raw === null || raw === undefined) {
-    return null;
+    return undefined;
   }
 
   if (typeof raw === "number" && Number.isFinite(raw)) {
@@ -66,7 +66,7 @@ function parseDateToTimestamp(raw: unknown): number | null {
   if (typeof raw === "string") {
     const trimmed = raw.trim();
     if (!trimmed) {
-      return null;
+      return undefined;
     }
     const numeric = Number.parseFloat(trimmed);
     if (Number.isFinite(numeric)) {
@@ -78,7 +78,7 @@ function parseDateToTimestamp(raw: unknown): number | null {
     }
   }
 
-  return null;
+  return undefined;
 }
 
 async function fetchJson(url: string, init: RequestInit = {}) {
