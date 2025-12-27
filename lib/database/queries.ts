@@ -1,5 +1,5 @@
 /**
- * Database queries for opinion.arb terminal
+ * Database queries for pm.ag terminal
  * 
  * These functions query the Prisma database for trades, fees, and metrics
  * 
@@ -292,4 +292,3 @@ export async function getTradeByTradeId(tradeId: bigint) {
     where: { tradeId },
   });
 }
-

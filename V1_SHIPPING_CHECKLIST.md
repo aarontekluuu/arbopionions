@@ -1,7 +1,7 @@
 # v1.0 Shipping Checklist
 
-## v1.0 Goal: Read-Only Arbitrage Discovery
-A production-ready dashboard for discovering arbitrage opportunities on Opinion.trade markets.
+## v1.0 Goal: Read-Only Market Aggregation
+A production-ready dashboard for aggregating prediction market prices on Opinion.trade and supported platforms.
 
 ---
 
@@ -33,12 +33,10 @@ A production-ready dashboard for discovering arbitrage opportunities on Opinion.
 
 ### 3. ✅ Core Functionality
 - [x] Real-time market data fetching
-- [x] Edge calculation (sum, edge percentage)
-- [x] Market filtering (limit, minEdge)
-- [x] Sorting (volume, edge)
+- [x] Market aggregation across sources
+- [x] Theme grouping and market matching
 - [x] Auto-refresh with stale indicators
-- [x] Market links to Opinion.trade
-- [x] Market detail modal
+- [x] Market links to source platforms
 - [x] Wallet connection (read-only)
 
 ### 4. ✅ Error Handling
@@ -65,14 +63,14 @@ A production-ready dashboard for discovering arbitrage opportunities on Opinion.
 - [ ] Empty state when no trades
 - **Note:** Real portfolio data requires smart contracts (v2.0)
 
-### 7. Cross-Platform Arbitrage
+### 7. Cross-Platform Coverage
 - [ ] Kalshi integration
 - [ ] Polymarket integration
 - **Note:** This is v1.5+ feature
 
 ### 8. Enhanced Features
 - [ ] Market search
-- [ ] Historical edge tracking
+- [ ] Historical price tracking
 - [ ] Market alerts
 - **Note:** These are v1.5+ features
 
@@ -83,18 +81,16 @@ A production-ready dashboard for discovering arbitrage opportunities on Opinion.
 ### Functional Testing
 - [ ] Markets page loads and displays real data
 - [ ] Market links open correct Opinion.trade pages
-- [ ] Filtering works (limit, minEdge)
-- [ ] Sorting works (volume, edge)
+- [ ] Theme filtering works
 - [ ] Auto-refresh updates data every 15s
 - [ ] Stale indicator shows when API fails
-- [ ] Market modal displays correct information
 - [ ] Wallet connection works
 - [ ] No console errors (except CSP warnings)
 
 ### API Testing
-- [ ] `/api/edges` returns real market data
-- [ ] `/api/edges?limit=20` works
-- [ ] `/api/edges?limit=100` works
+- [ ] `/api/markets` returns real market data
+- [ ] `/api/markets?limit=20` works
+- [ ] `/api/markets?limit=50` works
 - [ ] Rate limiting works (test with rapid requests)
 - [ ] Error handling works (test with invalid API key)
 
@@ -141,7 +137,7 @@ A production-ready dashboard for discovering arbitrage opportunities on Opinion.
 ## Known Issues (Acceptable for v1.0)
 
 1. **Portfolio shows mock data** - Expected, will be fixed in v2.0
-2. **No cross-platform arbitrage** - v1.5+ feature
+2. **Limited cross-platform coverage** - v1.5+ feature
 3. **Debug logging in development** - Acceptable, gated by NODE_ENV
 
 ---
@@ -154,7 +150,7 @@ A production-ready dashboard for discovering arbitrage opportunities on Opinion.
 
 ### Can Ship Without (v1.5+):
 - Portfolio real data
-- Cross-platform arbitrage
+- Cross-platform coverage
 - Advanced features
 
 ---
@@ -169,5 +165,4 @@ A production-ready dashboard for discovering arbitrage opportunities on Opinion.
 5. Production deployment successful
 6. Basic testing complete
 
-**v1.0 is a read-only arbitrage discovery tool. Trading execution comes in v2.0+.**
-
+**v1.0 is a read-only market aggregation tool. Trading execution comes in v2.0+.**

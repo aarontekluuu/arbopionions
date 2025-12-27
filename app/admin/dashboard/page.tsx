@@ -43,7 +43,7 @@ export default function AdminDashboard() {
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-xl font-semibold text-terminal-text flex items-center gap-2">
-          <span className="text-terminal-purple">&gt;</span>
+          <span className="text-terminal-accent">&gt;</span>
           OPERATIONAL DASHBOARD
         </h1>
         <p className="text-sm text-terminal-dim mt-1">
@@ -155,4 +155,3 @@ function StatusItem({ label, value, status }: { label: string; value: string; st
     </div>
   );
 }
-

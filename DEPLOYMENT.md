@@ -90,8 +90,8 @@ npm run dev
 
 After deployment, verify that:
 
-1. The API is working by checking `/api/edges` endpoint
-2. The response header `X-Data-Source` shows `api` (not `mock`)
+1. The API is working by checking `/api/markets` endpoint
+2. The response header `X-Cache` shows `HIT`, `MISS`, or `STALE`
 3. Real market data is displayed on the dashboard
 4. No errors appear in Vercel function logs
 
@@ -101,6 +101,12 @@ After deployment, verify that:
 - **Never set** `PRIVATE_KEY` in Vercel environment variables
 - API keys are server-side only and never exposed to the client
 - The `OPINION_API_KEY` is used only in server-side API routes
+
+
+
+
+
+
 
 
 

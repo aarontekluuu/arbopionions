@@ -1,14 +1,14 @@
-# opinion.arb terminal
+# pm.ag terminal
 
-A real-time prediction market arbitrage dashboard built with Next.js, TypeScript, and Tailwind CSS. Powered by the Opinion OpenAPI.
+A real-time prediction market aggregation dashboard built with Next.js, TypeScript, and Tailwind CSS. Powered by the Opinion OpenAPI and public market sources.
 
 ## Features
 
-- **Live Markets**: Real-time prediction market data from Opinion API
-- **Edge Detection**: Visual highlighting of arbitrage opportunities (sum < 1)
+- **Live Markets**: Real-time prediction market data across supported platforms
+- **Market Matching**: Grouped views of similar markets across platforms
 - **Wallet Connect**: Multi-chain wallet support (BNB Chain + Polygon)
 - **Auto-refresh**: Configurable polling (15s default) with stale data indicators
-- **Filter Controls**: Limit results, filter by minimum edge percentage
+- **Source Health**: Platform status cards with live/error reporting
 - **Terminal UI**: Dark theme with monospace fonts and terminal aesthetics
 
 ## Prerequisites
@@ -139,11 +139,11 @@ REPORT_GAS=true npx hardhat test
 
 | Route | Description |
 |-------|-------------|
-| `/` | Markets dashboard with live prices |
+| `/` | Aggregated markets dashboard with live prices |
+| `/aggregation` | Themed market aggregation view |
 | `/welcome` | Welcome screen (shown on first visit) |
-| `/arbitrage` | Cross-platform arbitrage (Kalshi + Polymarket) |
 | `/portfolio` | Portfolio tracking (mock data) |
-| `/api/edges` | API endpoint for market edge data |
+| `/api/markets` | API endpoint for aggregated market data |
 | `/api/orderbook` | API endpoint for orderbook data |
 
 ## Wallet Support
@@ -164,9 +164,9 @@ Supported wallets:
 ```
 ├── app/
 │   ├── api/
-│   │   ├── edges/route.ts      # Market edges API
+│   │   ├── markets/route.ts    # Aggregated market API
 │   │   └── orderbook/route.ts  # Orderbook API
-│   ├── arbitrage/page.tsx      # Cross-platform arbitrage
+│   ├── aggregation/page.tsx    # Themed aggregation
 │   ├── portfolio/page.tsx      # Portfolio tracking
 │   ├── welcome/page.tsx        # Welcome screen
 │   ├── context.tsx             # App-wide state
@@ -175,17 +175,14 @@ Supported wallets:
 │   └── globals.css             # Global styles
 ├── components/
 │   ├── NavBar.tsx              # Top navigation
-│   ├── MarketCard.tsx          # Market card component
-│   ├── MarketModal.tsx         # Market detail modal
-│   ├── FilterBar.tsx           # Filter controls
 │   ├── ConnectWallet.tsx       # Wallet connection (wagmi)
 │   └── StatusIndicator.tsx     # Live/Paused status
 ├── lib/
 │   ├── wagmi.ts                # Wagmi configuration
 │   ├── opinionClient.ts        # Server-side Opinion API client
 │   ├── links.ts                # URL generation utilities
-│   ├── edge.ts                 # Edge computation logic
-│   ├── mock.ts                 # Mock data for development
+│   ├── marketSources.ts        # Cross-platform market fetchers
+│   ├── marketMatching.ts       # Title normalization + grouping
 │   └── types.ts                # TypeScript types
 ├── providers/
 │   └── WagmiProvider.tsx       # Wagmi + React Query provider
@@ -195,12 +192,12 @@ Supported wallets:
 
 ## API Reference
 
-### GET /api/edges
+### GET /api/markets
 
-Returns market data with edge calculations.
+Returns aggregated market data from configured sources.
 
 **Query Parameters:**
-- `limit` (number): Number of markets to return (default: 20, min: 5, max: 200)
+- `limit` (number): Number of markets to return (default: 20, min: 5, max: 50)
 
 **Response:**
 ```json
@@ -209,17 +206,21 @@ Returns market data with edge calculations.
   "stale": false,
   "list": [
     {
-      "marketId": 123,
+      "platform": "opinion",
+      "marketId": "123",
       "marketTitle": "Will Bitcoin exceed $100K by end of 2025?",
-      "marketUrl": "https://app.opinion.trade/detail?topicId=123&type=multi",
-      "volume24h": 125000,
-      "yes": { "tokenId": "token-yes", "price": 0.45 },
-      "no": { "tokenId": "token-no", "price": 0.48 },
-      "sum": 0.93,
-      "edge": 0.07,
-      "updatedAt": 1705320000000
+      "price": 0.45,
+      "updatedAt": 1705320000000,
+      "url": "https://app.opinion.trade/detail?topicId=123&type=multi"
     }
-  ]
+  ],
+  "sources": {
+    "opinion": { "status": "live" },
+    "kalshi": { "status": "error", "error": "..." },
+    "polymarket": { "status": "live" },
+    "predictfun": { "status": "live" },
+    "limitless": { "status": "live" }
+  }
 }
 ```
 
@@ -246,10 +247,10 @@ Returns orderbook data for a token.
 
 ## Architecture
 
-- **Server-side only**: Opinion API calls happen server-side; API key never exposed to client
-- **Caching**: 10-second TTL cache with request coalescing to reduce API load
-- **Rate limiting**: Built-in concurrency limiter (max 10 inflight) + retry with backoff
-- **Graceful degradation**: Returns stale cached data if Opinion API fails
+- **Server-side only**: Market source calls happen server-side; API keys never exposed to client
+- **Caching**: 15-second TTL cache with request coalescing to reduce API load
+- **Rate limiting**: Per-client in-memory limiter on API routes
+- **Graceful degradation**: Returns stale cached data if sources fail
 - **Multi-chain wallet**: wagmi v2 with WalletConnect + injected connectors
 
 ## Tech Stack

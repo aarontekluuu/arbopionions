@@ -16,11 +16,15 @@ const config: Config = {
           muted: "#404040",
           text: "#e4e4e7",
           dim: "#71717a",
-          accent: "#22c55e",
+          accent: "#d4a574",
           warn: "#eab308",
           danger: "#ef4444",
           cyan: "#06b6d4",
           purple: "#a855f7",
+          green: "#22c55e",
+          blue: "#3b82f6",
+          orange: "#f97316",
+          beige: "#d4a574",
         },
       },
       fontFamily: {
@@ -37,4 +41,3 @@ const config: Config = {
   plugins: [],
 };
 export default config;
-

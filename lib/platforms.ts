@@ -1,4 +1,4 @@
-import type { MarketEdge, Platform } from "./types";
+import type { Platform } from "./types";
 
 /**
  * Platform metadata
@@ -20,36 +20,37 @@ export const platformInfo: Record<Platform, PlatformInfo> = {
     displayName: "Opinion.trade",
     url: "https://app.opinion.trade",
     chainId: 56, // BNB Chain
-    color: "terminal-warn",
+    color: "terminal-orange",
   },
   kalshi: {
     name: "kalshi",
-    displayName: "Kalshi",
+    displayName: "Kalshi", // Branded as Kalshi, but uses DFlow backend
     url: "https://kalshi.com",
     chainId: 1, // Ethereum (for now, may change)
-    color: "terminal-cyan",
+    color: "terminal-green",
   },
   polymarket: {
     name: "polymarket",
     displayName: "Polymarket",
     url: "https://polymarket.com",
     chainId: 137, // Polygon
+    color: "terminal-blue",
+  },
+  predictfun: {
+    name: "predictfun",
+    displayName: "Predict.fun",
+    url: "https://predict.fun",
+    chainId: 1, // Ethereum (to be confirmed)
     color: "terminal-purple",
   },
+  limitless: {
+    name: "limitless",
+    displayName: "Limitless",
+    url: "https://limitless.exchange",
+    chainId: 8453, // Base (market contracts), to be confirmed
+    color: "terminal-cyan",
+  },
 };
-
-/**
- * Get platform for a market
- * For now, all markets are Opinion.trade
- * Future: Detect based on market data or API response
- */
-export function getMarketPlatform(market: MarketEdge): Platform {
-  // TODO: When Kalshi/Polymarket integration is added, detect based on:
-  // - Market source field from API
-  // - Token ID patterns
-  // - Chain ID
-  return "opinion";
-}
 
 /**
  * Get platform info
@@ -57,4 +58,3 @@ export function getMarketPlatform(market: MarketEdge): Platform {
 export function getPlatformInfo(platform: Platform): PlatformInfo {
   return platformInfo[platform];
 }
-

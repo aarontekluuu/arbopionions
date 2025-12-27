@@ -11,7 +11,7 @@ function truncateAddress(address: string): string {
 
 const SUPPORTED_CHAINS = [
   { id: bsc.id, name: "BNB Chain", platform: "Opinion.trade", color: "terminal-warn" },
-  { id: polygon.id, name: "Polygon", platform: "Polymarket", color: "terminal-purple" },
+  { id: polygon.id, name: "Polygon", platform: "Polymarket", color: "terminal-accent" },
 ];
 
 export function ConnectWallet() {

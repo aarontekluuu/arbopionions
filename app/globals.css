@@ -5,17 +5,18 @@
 @tailwind utilities;
 
 :root {
-  --terminal-bg: #0a0a0a;
-  --terminal-surface: #121212;
-  --terminal-border: #1e1e1e;
-  --terminal-muted: #404040;
-  --terminal-text: #e4e4e7;
-  --terminal-dim: #71717a;
-  --terminal-accent: #22c55e;
-  --terminal-warn: #eab308;
-  --terminal-danger: #ef4444;
-  --terminal-cyan: #06b6d4;
-  --terminal-purple: #a855f7;
+  --terminal-bg: #f7f4ef;
+  --terminal-surface: #ffffff;
+  --terminal-border: #e5dfd4;
+  --terminal-muted: #c7bdaf;
+  --terminal-text: #1a1a1a;
+  --terminal-dim: #6b645c;
+  --terminal-accent: #c8a26e;
+  --terminal-warn: #b7791f;
+  --terminal-danger: #b42318;
+  --terminal-cyan: #2b2b2b;
+  --terminal-purple: #a8927d;
+  --terminal-beige: #c8a26e;
 }
 
 * {
@@ -47,20 +48,6 @@ body {
   font-family: "JetBrains Mono", monospace;
 }
 
-@keyframes pulse-glow {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
-  }
-  50% {
-    box-shadow: 0 0 8px 2px rgba(34, 197, 94, 0.3);
-  }
-}
-
-.edge-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
-}
-
 @keyframes blink {
   0%,
   50% {
@@ -86,4 +73,3 @@ body {
   background-size: 100% 4px;
   pointer-events: none;
 }
-

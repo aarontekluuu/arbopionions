@@ -8,14 +8,14 @@ export default function WelcomePage() {
 
   useEffect(() => {
     // Check if user has visited before
-    const hasVisited = localStorage.getItem("opinion-arb-visited");
+    const hasVisited = localStorage.getItem("pm-ag-visited");
     if (!hasVisited) {
       setShowWelcome(true);
     }
   }, []);
 
   const handleGetStarted = () => {
-    localStorage.setItem("opinion-arb-visited", "true");
+    localStorage.setItem("pm-ag-visited", "true");
     window.location.href = "/";
   };
 
@@ -34,7 +34,7 @@ export default function WelcomePage() {
               <span className="text-terminal-accent font-bold text-xl">⚡</span>
             </div>
             <div className="text-left">
-              <h1 className="text-2xl font-bold text-terminal-text">opinion.arb</h1>
+              <h1 className="text-2xl font-bold text-terminal-text">pm.ag</h1>
               <p className="text-sm text-terminal-dim tracking-widest">TERMINAL</p>
             </div>
           </div>
@@ -50,12 +50,12 @@ export default function WelcomePage() {
             <div>
               <h2 className="text-xl font-semibold text-terminal-text mb-2 flex items-center gap-2">
                 <span className="text-terminal-accent">&gt;</span>
-                WELCOME TO OPINION.ARB TERMINAL
+                WELCOME TO PM.AG TERMINAL
                 <span className="cursor-blink" />
               </h2>
               <p className="text-sm text-terminal-dim leading-relaxed">
-                Real-time prediction market arbitrage dashboard. Discover edge opportunities
-                across Opinion.trade, Kalshi, and Polymarket.
+                Real-time prediction market aggregation dashboard. Track pricing across
+                Opinion.trade, Kalshi, Polymarket, Predict.fun, and Limitless.
               </p>
             </div>
 
@@ -67,16 +67,16 @@ export default function WelcomePage() {
                   <span className="text-sm font-medium text-terminal-text">Live Markets</span>
                 </div>
                 <p className="text-xs text-terminal-dim">
-                  Real-time prices from Opinion.trade API
+                  Real-time prices across supported platforms
                 </p>
               </div>
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <span className="text-terminal-accent">●</span>
-                  <span className="text-sm font-medium text-terminal-text">Edge Detection</span>
+                  <span className="text-sm font-medium text-terminal-text">Market Matching</span>
                 </div>
                 <p className="text-xs text-terminal-dim">
-                  Automatic arbitrage opportunity scanning
+                  Grouped views for overlapping market titles
                 </p>
               </div>
               <div className="space-y-2">
@@ -93,7 +93,7 @@ export default function WelcomePage() {
             {/* Quick Stats */}
             <div className="bg-terminal-bg border border-terminal-border rounded-lg p-4 grid grid-cols-3 gap-4 text-center">
               <div>
-                <div className="text-lg font-bold text-terminal-accent">3</div>
+                <div className="text-lg font-bold text-terminal-accent">4</div>
                 <div className="text-[10px] text-terminal-dim uppercase tracking-wider">Platforms</div>
               </div>
               <div>
@@ -118,7 +118,7 @@ export default function WelcomePage() {
                 </svg>
               </button>
               <Link
-                href="/arbitrage"
+                href="/aggregation"
                 className="flex-1 px-6 py-4 bg-terminal-border text-terminal-text font-medium rounded-lg hover:bg-terminal-muted transition-colors flex items-center justify-center gap-2"
               >
                 <span>LEARN MORE</span>
@@ -150,5 +150,3 @@ export default function WelcomePage() {
     </div>
   );
 }
-
-

@@ -142,6 +142,9 @@ export const platformUrls = {
   
   // Polymarket uses slug-based URLs
   polymarket: (slug: string) => `https://polymarket.com/event/${slug}`,
+
+  // Limitless uses slug-based URLs
+  limitless: (slug: string) => `https://limitless.exchange/markets/${slug}`,
 };
 
 /**
@@ -157,5 +160,8 @@ export const platformOrderUrls = {
   // Future: Polymarket order URLs
   polymarket: (slug: string, side: "yes" | "no") => 
     `https://polymarket.com/event/${slug}?side=${side}`,
-};
 
+  // Future: Limitless order URLs
+  limitless: (slug: string, side: "yes" | "no") =>
+    `https://limitless.exchange/markets/${slug}?side=${side}`,
+};

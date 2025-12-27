@@ -3,18 +3,12 @@ export type {
   Market,
   TokenPrice,
   TokenPriceInfo,
-  MarketEdge,
-  EdgesResponse,
   ApiError,
   OrderbookLevel,
   TokenOrderbook,
   OrderbookResponse,
-  SortOption,
+  MarketPriceSnapshot,
+  MarketsResponse,
+  PlatformSource,
+  PlatformSourceState,
 } from "@/lib/types";
-
-// Frontend-specific types
-export interface FilterState {
-  limit: 20 | 40 | 60 | 100;
-  minEdge: number;
-  autoRefresh: boolean;
-}

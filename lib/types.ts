@@ -1,5 +1,5 @@
 /**
- * Core types for the opinion.arb terminal
+ * Core types for the pm.ag terminal
  */
 
 /** Raw market data from Opinion API */
@@ -24,28 +24,6 @@ export interface TokenPrice {
 export interface TokenPriceInfo {
   tokenId: string;
   price: number;
-}
-
-/** Computed market edge data */
-export interface MarketEdge {
-  marketId: number;
-  topicId?: number; // Use for Opinion.trade URL generation
-  marketTitle: string;
-  marketUrl: string;
-  volume24h: number;
-  yes: TokenPriceInfo;
-  no: TokenPriceInfo;
-  sum: number;
-  edge: number;
-  updatedAt: number;
-}
-
-/** API response structure */
-export interface EdgesResponse {
-  updatedAt: number;
-  stale: boolean;
-  list: MarketEdge[];
-  error?: string;
 }
 
 /** API error response */
@@ -76,11 +54,8 @@ export interface OrderbookResponse {
   timestamp: number;
 }
 
-/** Sort options for markets */
-export type SortOption = "volume" | "edge";
-
 /** Platform types */
-export type Platform = "opinion" | "kalshi" | "polymarket";
+export type Platform = "opinion" | "kalshi" | "polymarket" | "predictfun" | "limitless";
 
 /** Order placement data */
 export interface OrderPlacement {
@@ -88,4 +63,50 @@ export interface OrderPlacement {
   platform: Platform;
   side: "yes" | "no";
   url: string;
+}
+
+/** Market match across platforms */
+export interface MarketMatch {
+  markets: {
+    platform: Platform;
+    marketId: string | number;
+    marketTitle: string;
+    marketUrl: string;
+    yesPrice: number;
+    noPrice: number;
+    volume24h?: number;
+  }[];
+  similarity: number; // 0-1 confidence score
+  normalizedTitle: string; // Normalized title for matching
+}
+
+/** Platform market sources */
+export type PlatformSource = "opinion" | "kalshi" | "polymarket" | "predictfun" | "limitless";
+
+/** Platform source status */
+export type PlatformSourceStatus = "live" | "error";
+
+/** Normalized market price snapshot */
+export interface MarketPriceSnapshot {
+  platform: PlatformSource;
+  marketId: string;
+  marketTitle: string;
+  price: number;
+  updatedAt: number;
+  url?: string;
+}
+
+/** Market sources metadata */
+export interface PlatformSourceState {
+  status: PlatformSourceStatus;
+  error?: string;
+}
+
+/** Cross-platform markets response */
+export interface MarketsResponse {
+  updatedAt: number;
+  stale: boolean;
+  list: MarketPriceSnapshot[];
+  sources: Record<PlatformSource, PlatformSourceState>;
+  error?: string;
 }

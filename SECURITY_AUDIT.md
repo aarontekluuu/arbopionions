@@ -1,4 +1,4 @@
-# Security Audit: opinion.arb terminal
+# Security Audit: pm.ag terminal
 
 **Date:** 2025-01-XX  
 **Version:** v2  
@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-This audit identifies security edge cases and potential vulnerabilities in the opinion.arb terminal codebase. The application is currently read-only (no order execution), but several security improvements should be implemented before adding trading functionality.
+This audit identifies security edge cases and potential vulnerabilities in the pm.ag terminal codebase. The application is currently read-only (no order execution), but several security improvements should be implemented before adding trading functionality.
 
 **Risk Level Summary:**
 - 🔴 **Critical:** 2 issues
@@ -20,14 +20,14 @@ This audit identifies security edge cases and potential vulnerabilities in the o
 
 ## Critical Issues
 
-### 1. 🔴 No Rate Limiting on API Routes
+### 1. 🔴 In-Memory Rate Limiting Only
 
-**Location:** `/app/api/edges/route.ts`, `/app/api/orderbook/route.ts`
+**Location:** `/app/api/markets/route.ts`, `/app/api/orderbook/route.ts`
 
-**Issue:** API routes have no per-IP or per-user rate limiting. An attacker could:
-- Exhaust server resources with rapid requests
+**Issue:** API routes rely on an in-memory limiter. In serverless environments this resets per instance and does not provide global enforcement. An attacker could:
+- Burst requests across instances
 - Bypass cache by spamming requests
-- Cause DoS by overwhelming the Opinion API
+- Exhaust upstream API quotas
 
 **Impact:** 
 - Server resource exhaustion
@@ -124,7 +124,7 @@ if (!tokenId || !validateTokenId(tokenId)) {
 ```typescript
 // Add to API routes or middleware
 const corsHeaders = {
-  "Access-Control-Allow-Origin": process.env.ALLOWED_ORIGIN || "https://arb-opionions.vercel.app",
+  "Access-Control-Allow-Origin": process.env.ALLOWED_ORIGIN || "https://pm.ag",
   "Access-Control-Allow-Methods": "GET",
   "Access-Control-Allow-Headers": "Content-Type",
 };
@@ -138,7 +138,7 @@ return NextResponse.json(data, { headers: corsHeaders });
 
 ### 4. 🟡 Cache Poisoning Risk
 
-**Location:** `/app/api/edges/route.ts:20`
+**Location:** `/app/api/markets/route.ts:20`
 
 **Issue:** In-memory cache is shared across all users. Malicious user could:
 - Pollute cache with crafted requests
@@ -176,7 +176,7 @@ let cache: CacheEntry | null = null; // Shared global state
 
 **Example:**
 ```typescript
-console.error("[/api/edges] Error fetching data:", errorMessage);
+console.error("[/api/markets] Error fetching data:", errorMessage);
 // Could log full error stack in production
 ```
 
@@ -200,33 +200,7 @@ const sanitizeError = (error: unknown): string => {
 
 ---
 
-### 6. 🟡 XSS Risk: Market Titles Not Sanitized
-
-**Location:** `/components/MarketModal.tsx`, `/components/MarketCard.tsx`
-
-**Issue:** Market titles from API are rendered directly without sanitization. If API is compromised or returns malicious data:
-```tsx
-<h2>{market.marketTitle}</h2> // Could contain <script> tags
-```
-
-**Impact:**
-- Cross-site scripting attacks
-- Session hijacking
-- Data exfiltration
-
-**Recommendation:**
-```typescript
-import DOMPurify from "isomorphic-dompurify";
-
-// Sanitize before rendering
-const safeTitle = DOMPurify.sanitize(market.marketTitle);
-```
-
-**Priority:** Fix before production (especially if API is untrusted)
-
----
-
-### 7. 🟡 No Request Size Limits
+### 6. 🟡 No Request Size Limits
 
 **Location:** All API routes
 
@@ -251,7 +225,7 @@ const safeTitle = DOMPurify.sanitize(market.marketTitle);
 
 ## Medium Priority Issues
 
-### 8. 🟢 Environment Variable Validation
+### 7. 🟢 Environment Variable Validation
 
 **Location:** `lib/opinionClient.ts:81-94`
 
@@ -278,9 +252,9 @@ function validateBaseUrl(url: string): boolean {
 
 ---
 
-### 9. 🟢 Debug Logging in Production Code
+### 8. 🟢 Debug Logging in Production Code
 
-**Location:** `/app/api/edges/route.ts:75-83`
+**Location:** `/app/api/markets/route.ts`
 
 **Issue:** Debug logging is gated by `NODE_ENV` but could accidentally expose sensitive data.
 
@@ -303,7 +277,7 @@ if (process.env.NODE_ENV === "development" && opinionMarkets.length > 0) {
 
 ---
 
-### 10. 🟢 No Request Timeout on API Routes
+### 9. 🟢 No Request Timeout on API Routes
 
 **Location:** All API routes
 
@@ -322,9 +296,9 @@ export const maxDuration = 10; // 10 seconds max
 
 ---
 
-### 11. 🟢 URL Generation: Potential Open Redirect
+### 10. 🟢 URL Generation: Potential Open Redirect
 
-**Location:** `lib/links.ts`, `components/MarketModal.tsx`
+**Location:** `lib/links.ts`, `app/aggregation/page.tsx`
 
 **Issue:** URLs are generated from user-controlled data (marketId, topicId). If not validated, could be used for open redirect attacks.
 
@@ -378,7 +352,7 @@ const limiter = new ConcurrencyLimiter(MAX_CONCURRENT); // Global
 
 ### 14. 🟢 Cache: No TTL on Stale Data
 
-**Location:** `/app/api/edges/route.ts:246-252`
+**Location:** `/app/api/markets/route.ts`
 
 **Issue:** Stale cache data is served indefinitely. No maximum age for stale data.
 
@@ -399,7 +373,7 @@ if (cache && Date.now() - cache.expiresAt < MAX_STALE_AGE_MS) {
 
 ### 15. 🟢 No Input Length Validation on limit Parameter
 
-**Location:** `/app/api/edges/route.ts:25-40`
+**Location:** `/app/api/markets/route.ts`
 
 **Issue:** While `limit` is clamped, extremely large values could cause issues before clamping.
 
@@ -630,4 +604,3 @@ Consider professional pen testing before:
 ---
 
 **Next Review:** Before v5 (order execution implementation)
-

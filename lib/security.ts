@@ -8,7 +8,7 @@ import type { NextResponse } from "next/server";
  * Get CORS headers
  */
 export function getCorsHeaders(): Record<string, string> {
-  const allowedOrigin = process.env.ALLOWED_ORIGIN || "https://arb-opionions.vercel.app";
+  const allowedOrigin = process.env.ALLOWED_ORIGIN || "https://pm.ag";
   
   return {
     "Access-Control-Allow-Origin": allowedOrigin,

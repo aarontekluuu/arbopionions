@@ -1,4 +1,4 @@
-// Prisma schema for opinion.arb terminal
+// Prisma schema for pm.ag terminal
 // Database: PostgreSQL
 
 generator client {
@@ -74,4 +74,3 @@ model SystemMetrics {
   
   @@index([date])
 }
-
