@@ -270,6 +270,7 @@ export default function AggregationPage() {
         yesPrice: snapshot.price,
         noPrice: 1 - snapshot.price,
         volume24h: 0,
+        expiresAt: snapshot.expiresAt,
       }));
 
       const rawMatches =
@@ -309,6 +310,31 @@ export default function AggregationPage() {
   const normalizedSearch = useMemo(() => searchTerm.trim().toLowerCase(), [searchTerm]);
   const isSearching = normalizedSearch.length > 0;
 
+  const searchMatches = useMemo(() => {
+    if (!isSearching || !data?.list) {
+      return [];
+    }
+    return data.list.filter((snapshot) =>
+      snapshot.marketTitle.toLowerCase().includes(normalizedSearch)
+    );
+  }, [data?.list, isSearching, normalizedSearch]);
+
+  const searchResultsByPlatform = useMemo(() => {
+    if (!isSearching) {
+      return [];
+    }
+    const grouped = new Map<PlatformSource, typeof searchMatches>();
+    for (const snapshot of searchMatches) {
+      if (!grouped.has(snapshot.platform)) {
+        grouped.set(snapshot.platform, []);
+      }
+      grouped.get(snapshot.platform)!.push(snapshot);
+    }
+    return Array.from(grouped.entries())
+      .map(([platform, markets]) => ({ platform, markets }))
+      .sort((a, b) => b.markets.length - a.markets.length);
+  }, [isSearching, searchMatches]);
+
   const filteredThemeGroups = useMemo(() => {
     if (!isSearching) {
       return visibleThemeGroups;
@@ -343,11 +369,11 @@ export default function AggregationPage() {
             <div>
               <p className="text-xs uppercase tracking-[0.3em] text-terminal-dim">Market aggregator</p>
               <h1 className="mt-3 text-3xl font-semibold text-terminal-text sm:text-4xl">
-                Cross-platform event clusters, trimmed for focus.
+                Aggregating Prices across Prediction Markets.
               </h1>
               <p className="mt-3 max-w-2xl text-sm text-terminal-dim">
-                Browse the strongest multi-venue matches by theme. Each cluster shows only the market name, venue, and
-                YES/NO prices so you can spot pricing gaps without the noise.
+                Browse and find price discrepancies on Polymarket, Kalshi, Predict.Fun, and Opinion.Trade. Each cluster
+                shows only the market name, venue, and YES/NO prices so you can spot pricing gaps without the noise.
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -471,7 +497,64 @@ export default function AggregationPage() {
         </div>
       )}
 
-      {!isLoading && filteredThemeGroups.length > 0 && (
+      {isSearching && !isLoading && (
+        <div className="space-y-6">
+          <div className="rounded-2xl border border-terminal-border bg-terminal-surface px-6 py-6 sm:px-8">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-sm font-semibold text-terminal-text">Search results</h2>
+                <p className="mt-1 text-xs text-terminal-dim">
+                  {searchMatches.length} markets found across {searchResultsByPlatform.length} platforms
+                </p>
+              </div>
+              <div className="text-xs text-terminal-dim">
+                Keyword: “{searchTerm.trim()}”
+              </div>
+            </div>
+          </div>
+
+          {searchResultsByPlatform.map((group) => {
+            const info = getPlatformInfo(group.platform);
+            return (
+              <section
+                key={group.platform}
+                className="rounded-2xl border border-terminal-border bg-terminal-surface px-6 py-6 sm:px-8"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <span
+                      className={`rounded-full border px-3 py-1 text-xs font-semibold ${getPlatformChipClass(
+                        info.color
+                      )}`}
+                    >
+                      {info.displayName}
+                    </span>
+                    <span className="text-xs text-terminal-dim">{group.markets.length} markets</span>
+                  </div>
+                </div>
+                <div className="mt-4 grid gap-4">
+                  {group.markets.map((snapshot) => (
+                    <MarketRow
+                      key={`${snapshot.platform}-${snapshot.marketId}`}
+                      market={{
+                        platform: snapshot.platform,
+                        marketId: snapshot.marketId,
+                        marketTitle: snapshot.marketTitle,
+                        marketUrl: snapshot.url || "",
+                        yesPrice: snapshot.price,
+                        noPrice: 1 - snapshot.price,
+                        volume24h: 0,
+                      }}
+                    />
+                  ))}
+                </div>
+              </section>
+            );
+          })}
+        </div>
+      )}
+
+      {!isSearching && !isLoading && filteredThemeGroups.length > 0 && (
         <div className="space-y-10">
           {filteredThemeGroups.map((group) => (
             <section
@@ -524,13 +607,22 @@ export default function AggregationPage() {
         </div>
       )}
 
-      {!isLoading && !isError && filteredThemeGroups.length === 0 && (
+      {!isLoading && !isError && !isSearching && filteredThemeGroups.length === 0 && (
         <div className="flex items-center justify-center py-20">
           <div className="text-center text-terminal-dim">
             <p className="text-sm">NO CLUSTERS FOUND</p>
             <p className="text-xs mt-2">
               {isSearching ? "Try another keyword" : "Try another theme or relax the similarity filter"}
             </p>
+          </div>
+        </div>
+      )}
+
+      {!isLoading && !isError && isSearching && searchMatches.length === 0 && (
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center text-terminal-dim">
+            <p className="text-sm">NO MARKETS FOUND</p>
+            <p className="text-xs mt-2">Try another keyword</p>
           </div>
         </div>
       )}

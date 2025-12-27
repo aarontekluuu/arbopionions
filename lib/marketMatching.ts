@@ -18,6 +18,7 @@ export interface MarketData {
   yesPrice: number;
   noPrice: number;
   volume24h?: number;
+  expiresAt?: number;
   metadata?: Record<string, any>; // Platform-specific data
 }
 
@@ -98,9 +99,13 @@ function levenshteinDistance(str1: string, str2: string): number {
  * Calculate similarity score between two strings (0-1)
  * Uses Levenshtein distance normalized by max length
  */
-export function calculateStringSimilarity(str1: string, str2: string): number {
-  const normalized1 = normalizeMarketTitle(str1);
-  const normalized2 = normalizeMarketTitle(str2);
+export function calculateStringSimilarity(
+  str1: string,
+  str2: string,
+  removeCommonWords: boolean = false
+): number {
+  const normalized1 = normalizeMarketTitle(str1, removeCommonWords);
+  const normalized2 = normalizeMarketTitle(str2, removeCommonWords);
 
   if (normalized1 === normalized2) {
     return 1.0;
@@ -113,6 +118,77 @@ export function calculateStringSimilarity(str1: string, str2: string): number {
 
   const distance = levenshteinDistance(normalized1, normalized2);
   return 1 - distance / maxLen;
+}
+
+function parseTimestamp(raw: unknown): number | null {
+  if (raw === null || raw === undefined) {
+    return null;
+  }
+
+  if (typeof raw === "number" && Number.isFinite(raw)) {
+    return raw < 1_000_000_000_000 ? raw * 1000 : raw;
+  }
+
+  if (typeof raw === "string") {
+    const trimmed = raw.trim();
+    if (!trimmed) {
+      return null;
+    }
+    const numeric = Number.parseFloat(trimmed);
+    if (Number.isFinite(numeric)) {
+      return numeric < 1_000_000_000_000 ? numeric * 1000 : numeric;
+    }
+    const parsed = Date.parse(trimmed);
+    if (!Number.isNaN(parsed)) {
+      return parsed;
+    }
+  }
+
+  return null;
+}
+
+function getExpirationTimestamp(market: MarketData): number | null {
+  if (market.expiresAt !== undefined) {
+    return market.expiresAt;
+  }
+
+  const metadata = market.metadata ?? {};
+
+  return parseTimestamp(
+    metadata.expiresAt ??
+      metadata.endDate ??
+      metadata.close_time ??
+      metadata.closeTime ??
+      metadata.end_time ??
+      metadata.endTime ??
+      metadata.expiration ??
+      metadata.expiry
+  );
+}
+
+function calculateExpirationSimilarity(
+  market1: MarketData,
+  market2: MarketData
+): number | null {
+  const t1 = getExpirationTimestamp(market1);
+  const t2 = getExpirationTimestamp(market2);
+
+  if (!t1 || !t2) {
+    return null;
+  }
+
+  const diffDays = Math.abs(t1 - t2) / (1000 * 60 * 60 * 24);
+  const maxDiffDays = 60;
+
+  if (diffDays <= 1) {
+    return 1;
+  }
+
+  if (diffDays >= maxDiffDays) {
+    return 0;
+  }
+
+  return 1 - diffDays / maxDiffDays;
 }
 
 /**
@@ -150,7 +226,7 @@ export function calculateMarketSimilarity(
   }
 
   // Calculate string similarity
-  const stringSimilarity = calculateStringSimilarity(title1, title2);
+  const titleSimilarity = calculateStringSimilarity(title1, title2, true);
 
   // Calculate keyword overlap
   const keywords1 = new Set(extractKeywords(title1));
@@ -161,8 +237,17 @@ export function calculateMarketSimilarity(
   
   const keywordOverlap = union.size > 0 ? intersection.size / union.size : 0;
 
-  // Weighted combination: 70% string similarity, 30% keyword overlap
-  const combinedSimilarity = stringSimilarity * 0.7 + keywordOverlap * 0.3;
+  const expirationSimilarity = calculateExpirationSimilarity(market1, market2);
+
+  // Keywords carry the most weight; title similarity is a softer signal.
+  const keywordWeight = expirationSimilarity === null ? 0.7 : 0.6;
+  const titleWeight = 0.3;
+  const expirationWeight = expirationSimilarity === null ? 0 : 0.1;
+
+  const combinedSimilarity =
+    keywordOverlap * keywordWeight +
+    titleSimilarity * titleWeight +
+    (expirationSimilarity ?? 0) * expirationWeight;
 
   return combinedSimilarity;
 }
@@ -310,8 +395,6 @@ export function findBestMatch(
 
   return bestMatch;
 }
-
-
 
 
 

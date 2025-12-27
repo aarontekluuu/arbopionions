@@ -94,6 +94,7 @@ export interface MarketPriceSnapshot {
   price: number;
   updatedAt: number;
   url?: string;
+  expiresAt?: number;
 }
 
 /** Market sources metadata */

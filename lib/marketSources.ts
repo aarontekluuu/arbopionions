@@ -54,6 +54,33 @@ function normalizeTimestamp(raw: unknown): number {
   return parsed;
 }
 
+function parseDateToTimestamp(raw: unknown): number | null {
+  if (raw === null || raw === undefined) {
+    return null;
+  }
+
+  if (typeof raw === "number" && Number.isFinite(raw)) {
+    return raw < 1_000_000_000_000 ? raw * 1000 : raw;
+  }
+
+  if (typeof raw === "string") {
+    const trimmed = raw.trim();
+    if (!trimmed) {
+      return null;
+    }
+    const numeric = Number.parseFloat(trimmed);
+    if (Number.isFinite(numeric)) {
+      return numeric < 1_000_000_000_000 ? numeric * 1000 : numeric;
+    }
+    const parsed = Date.parse(trimmed);
+    if (!Number.isNaN(parsed)) {
+      return parsed;
+    }
+  }
+
+  return null;
+}
+
 async function fetchJson(url: string, init: RequestInit = {}) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
@@ -132,6 +159,7 @@ export async function fetchOpinionMarketPrices(
       price,
       updatedAt: normalizeTimestamp(priceInfo?.timestamp),
       url: getOpinionMarketUrl(market.marketId, market.topicId, market.marketTitle),
+      expiresAt: parseDateToTimestamp(market.cutoffAt ?? market.resolvedAt),
     });
   }
 
@@ -193,6 +221,7 @@ export async function fetchPolymarketPrices(
         price,
         updatedAt: Date.now(),
         url: market.slug ? platformUrls.polymarket(market.slug) : undefined,
+        expiresAt: parseDateToTimestamp(market.endDate),
       });
     }
 
@@ -282,6 +311,14 @@ export async function fetchKalshiPrices(
             market?.lastUpdated
         ),
         url: marketId !== "unknown" ? platformUrls.kalshi(String(marketId)) : undefined,
+        expiresAt: parseDateToTimestamp(
+          market?.close_time ??
+            market?.closeTime ??
+            market?.end_time ??
+            market?.endTime ??
+            market?.expiration ??
+            market?.expiresAt
+        ),
       });
     }
 
@@ -343,6 +380,16 @@ export async function fetchLimitlessPrices(
         price: yesPrice,
         updatedAt,
         url: market?.slug ? platformUrls.limitless(market.slug) : undefined,
+        expiresAt: parseDateToTimestamp(
+          market?.close_time ??
+            market?.closeTime ??
+            market?.end_time ??
+            market?.endTime ??
+            market?.expiration ??
+            market?.expiresAt ??
+            market?.expiry ??
+            market?.expires
+        ),
       });
     }
 
@@ -455,6 +502,15 @@ export async function fetchPredictFunPrices(
             market?.timestamp
         ),
         url: market?.url ?? market?.link ?? undefined,
+        expiresAt: parseDateToTimestamp(
+          market?.close_time ??
+            market?.closeTime ??
+            market?.end_time ??
+            market?.endTime ??
+            market?.expiration ??
+            market?.expiresAt ??
+            market?.expiry
+        ),
       });
     }
 

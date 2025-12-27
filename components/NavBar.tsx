@@ -3,10 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ConnectWallet } from "./ConnectWallet";
+import { showConnectWallet, showPortfolio } from "@/lib/uiFlags";
 
 const navItems = [
   { href: "/aggregation", label: "AGGREGATOR", shortcut: "A" },
-  { href: "/portfolio", label: "PORTFOLIO", shortcut: "P" },
+  ...(showPortfolio
+    ? [{ href: "/portfolio", label: "PORTFOLIO", shortcut: "P" }]
+    : []),
 ];
 
 export function NavBar() {
@@ -15,24 +18,9 @@ export function NavBar() {
   return (
     <header className="border-b border-terminal-border bg-terminal-surface/80 backdrop-blur-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 py-3">
-        <div className="flex items-center justify-between">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-8 h-8 rounded bg-terminal-accent/20 border border-terminal-accent/50 flex items-center justify-center group-hover:bg-terminal-accent/30 transition-colors">
-              <span className="text-terminal-accent font-bold text-sm">⚡</span>
-            </div>
-            <div className="hidden sm:block">
-              <h1 className="text-sm font-semibold tracking-wider text-terminal-text">
-                pm.ag
-              </h1>
-              <p className="text-[10px] text-terminal-dim tracking-widest">
-                TERMINAL
-              </p>
-            </div>
-          </Link>
-
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center">
           {/* Navigation Pills */}
-          <nav className="flex items-center gap-1">
+          <nav className="flex items-center gap-1 justify-self-start">
             {navItems.map((item) => {
               const isActive = pathname === item.href;
               return (
@@ -69,8 +57,25 @@ export function NavBar() {
             })}
           </nav>
 
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-3 group justify-self-center">
+            <div className="w-8 h-8 rounded bg-terminal-accent/20 border border-terminal-accent/50 flex items-center justify-center group-hover:bg-terminal-accent/30 transition-colors">
+              <span className="text-terminal-accent font-bold text-sm">⚡</span>
+            </div>
+            <div className="hidden sm:block">
+              <h1 className="text-sm font-semibold tracking-wider text-terminal-text">
+                pm.ag
+              </h1>
+              <p className="text-[10px] text-terminal-dim tracking-widest">
+                TERMINAL
+              </p>
+            </div>
+          </Link>
+
           {/* Connect Wallet */}
-          <ConnectWallet />
+          <div className="justify-self-end">
+            {showConnectWallet ? <ConnectWallet /> : null}
+          </div>
         </div>
       </div>
     </header>
