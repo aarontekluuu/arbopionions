@@ -457,7 +457,7 @@ export default function AggregationPage() {
         };
       })
       .filter((group): group is typeof availableThemes[number] => Boolean(group));
-  }, [availableThemes, isSearching, normalizedSearch, visibleThemeGroups]);
+  }, [availableThemes, isSearching, searchTokens, visibleThemeGroups]);
 
   return (
     <div className="max-w-6xl mx-auto">
