@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { MarketsResponse, MarketMatch, PlatformSource } from "@/lib/types";
 import { getPlatformInfo } from "@/lib/platforms";
@@ -18,20 +18,12 @@ import {
 const DEFAULT_LIMIT = 200;
 const MIN_SIMILARITY = 0.78;
 const MAX_GROUPS_PER_THEME = 6;
-const MAX_FEATURED_THEMES = 3;
 
 type EventGroup = {
   key: string;
   displayTitle: string;
   markets: MarketMatch["markets"];
   maxSimilarity: number;
-};
-
-type LinkPreview = {
-  title?: string;
-  image?: string;
-  siteName?: string;
-  url: string;
 };
 
 async function fetchMarkets(limit: number = DEFAULT_LIMIT): Promise<MarketsResponse> {
@@ -130,45 +122,11 @@ function MarketRow({ market }: MarketRowProps) {
         rel: "noopener noreferrer",
       }
     : {};
-  const [isOpen, setIsOpen] = useState(false);
-  const [preview, setPreview] = useState<LinkPreview | null>(null);
-  const [status, setStatus] = useState<"idle" | "loading" | "loaded" | "error">("idle");
-  const requestedRef = useRef(false);
-
-  const handleOpen = () => {
-    if (!hasPreviewLink) return;
-    setIsOpen(true);
-    if (requestedRef.current) return;
-    requestedRef.current = true;
-    setStatus("loading");
-    fetch(`/api/link-preview?url=${encodeURIComponent(market.marketUrl)}`)
-      .then((res) => {
-        if (!res.ok) throw new Error("preview failed");
-        return res.json();
-      })
-      .then((data: LinkPreview) => {
-        setPreview(data);
-        setStatus("loaded");
-      })
-      .catch(() => {
-        setStatus("error");
-      });
-  };
-
-  const handleClose = () => {
-    setIsOpen(false);
-  };
-
-  const showPreview = isOpen && hasPreviewLink;
 
   return (
     <Tag
       key={`${market.platform}-${market.marketId}`}
       {...tagProps}
-      onMouseEnter={handleOpen}
-      onMouseLeave={handleClose}
-      onFocus={handleOpen}
-      onBlur={handleClose}
       className="group relative flex flex-wrap items-center justify-between gap-3 rounded-lg border border-terminal-border bg-terminal-surface px-4 py-3 transition hover:border-terminal-accent"
     >
       <div className="flex flex-col gap-1">
@@ -207,35 +165,8 @@ function MarketRow({ market }: MarketRowProps) {
         <span className="font-mono text-terminal-text">{formatPrice(market.yesPrice)}</span>
         <span className="text-terminal-dim">NO</span>
         <span className="font-mono text-terminal-text">{formatPrice(market.noPrice)}</span>
-        {hasPreviewLink && (
-          <span className="text-terminal-dim group-hover:text-terminal-accent">Preview →</span>
-        )}
+        {hasPreviewLink && <span className="text-terminal-dim">Open →</span>}
       </div>
-      {showPreview && (
-        <div className="pointer-events-none mt-3 w-full max-w-sm rounded-xl border border-terminal-border bg-terminal-bg/95 p-3 text-xs text-terminal-dim shadow-lg backdrop-blur md:absolute md:right-4 md:top-1/2 md:mt-0 md:w-64 md:-translate-y-1/2">
-          {status === "loading" && <p className="text-terminal-dim">Loading preview…</p>}
-          {status === "error" && <p className="text-terminal-dim">Preview unavailable</p>}
-          {status !== "loading" && status !== "error" && preview && (
-            <div className="space-y-2">
-              {preview.image && (
-                <img
-                  src={preview.image}
-                  alt={preview.title || "Link preview"}
-                  className="h-28 w-full rounded-md object-cover"
-                  loading="lazy"
-                  referrerPolicy="no-referrer"
-                />
-              )}
-              <div>
-                {preview.title && <p className="font-semibold text-terminal-text">{preview.title}</p>}
-                <p className="mt-1 text-[10px] uppercase tracking-wide text-terminal-dim">
-                  {preview.siteName || "Preview"}
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
     </Tag>
   );
 }
@@ -310,7 +241,6 @@ function groupMatchesIntoEvents(matches: MarketMatch[]): EventGroup[] {
 export default function AggregationPage() {
   const [autoRefresh, setAutoRefresh] = useState<boolean>(true);
   const [limit] = useState<number>(DEFAULT_LIMIT);
-  const [activeTheme, setActiveTheme] = useState<MarketThemeKey | "featured">("featured");
   const [searchTerm, setSearchTerm] = useState<string>("");
 
   const {
@@ -388,21 +318,8 @@ export default function AggregationPage() {
   }, [data?.list]);
 
   const availableThemes = useMemo(() => {
-    return themeGroups.filter((group) => group.eventGroups.length > 0);
+    return themeGroups;
   }, [themeGroups]);
-
-  const featuredThemes = useMemo(() => {
-    return [...availableThemes]
-      .sort((a, b) => b.eventGroups.length - a.eventGroups.length)
-      .slice(0, MAX_FEATURED_THEMES);
-  }, [availableThemes]);
-
-  const visibleThemeGroups = useMemo(() => {
-    if (activeTheme === "featured") {
-      return featuredThemes;
-    }
-    return availableThemes.filter((group) => group.theme.key === activeTheme);
-  }, [activeTheme, availableThemes, featuredThemes]);
 
   const searchTokens = useMemo(() => tokenizeSearchTerm(searchTerm), [searchTerm]);
   const isSearching = searchTokens.length > 0;
@@ -434,7 +351,7 @@ export default function AggregationPage() {
 
   const filteredThemeGroups = useMemo(() => {
     if (!isSearching) {
-      return visibleThemeGroups;
+      return availableThemes;
     }
     const matchesTerm = (value: string) => matchesSearch(value, searchTokens);
     return availableThemes
@@ -457,7 +374,7 @@ export default function AggregationPage() {
         };
       })
       .filter((group): group is typeof availableThemes[number] => Boolean(group));
-  }, [availableThemes, isSearching, searchTokens, visibleThemeGroups]);
+  }, [availableThemes, isSearching, searchTokens]);
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -521,37 +438,6 @@ export default function AggregationPage() {
           </div>
         </div>
       </div>
-
-      {!isLoading && availableThemes.length > 0 && !isSearching && (
-        <div className="mb-8 flex flex-wrap items-center gap-2">
-          <span className="text-[10px] uppercase tracking-wider text-terminal-dim">Themes</span>
-          <button
-            onClick={() => setActiveTheme("featured")}
-            aria-pressed={activeTheme === "featured"}
-            className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
-              activeTheme === "featured"
-                ? "bg-terminal-accent/20 border-terminal-accent text-terminal-accent"
-                : "bg-terminal-bg border-terminal-border text-terminal-dim hover:text-terminal-text"
-            }`}
-          >
-            Featured
-          </button>
-          {availableThemes.map((group) => (
-            <button
-              key={group.theme.key}
-              onClick={() => setActiveTheme(group.theme.key)}
-              aria-pressed={activeTheme === group.theme.key}
-              className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
-                activeTheme === group.theme.key
-                  ? `${group.theme.chipClass} border-terminal-border`
-                  : "bg-terminal-bg border-terminal-border text-terminal-dim hover:text-terminal-text"
-              }`}
-            >
-              {group.theme.label}
-            </button>
-          ))}
-        </div>
-      )}
 
       {isError && (
         <div className="mb-4 p-4 bg-terminal-warn/10 border border-terminal-warn/30 rounded text-sm text-terminal-warn">
@@ -700,17 +586,6 @@ export default function AggregationPage() {
               </div>
             </section>
           ))}
-        </div>
-      )}
-
-      {!isLoading && !isError && !isSearching && filteredThemeGroups.length === 0 && (
-        <div className="flex items-center justify-center py-20">
-          <div className="text-center text-terminal-dim">
-            <p className="text-sm">NO CLUSTERS FOUND</p>
-            <p className="text-xs mt-2">
-              {isSearching ? "Try another keyword" : "Try another theme or relax the similarity filter"}
-            </p>
-          </div>
         </div>
       )}
 
