@@ -59,8 +59,11 @@ function parseDateToTimestamp(raw: unknown): number | undefined {
     return undefined;
   }
 
+  const minValidTimestampMs = Date.UTC(2000, 0, 1);
+
   if (typeof raw === "number" && Number.isFinite(raw)) {
-    return raw < 1_000_000_000_000 ? raw * 1000 : raw;
+    const parsed = raw < 1_000_000_000_000 ? raw * 1000 : raw;
+    return parsed >= minValidTimestampMs ? parsed : undefined;
   }
 
   if (typeof raw === "string") {
@@ -70,10 +73,11 @@ function parseDateToTimestamp(raw: unknown): number | undefined {
     }
     const numeric = Number.parseFloat(trimmed);
     if (Number.isFinite(numeric)) {
-      return numeric < 1_000_000_000_000 ? numeric * 1000 : numeric;
+      const parsed = numeric < 1_000_000_000_000 ? numeric * 1000 : numeric;
+      return parsed >= minValidTimestampMs ? parsed : undefined;
     }
     const parsed = Date.parse(trimmed);
-    if (!Number.isNaN(parsed)) {
+    if (!Number.isNaN(parsed) && parsed >= minValidTimestampMs) {
       return parsed;
     }
   }

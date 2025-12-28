@@ -53,6 +53,8 @@ export interface PolymarketOrderBook {
 const TIMEOUT_MS = 7000;
 const MAX_RETRIES = 2;
 const INITIAL_BACKOFF_MS = 500;
+const MIN_VALID_ENDDATE_MS = Date.UTC(2000, 0, 1);
+const MAX_ENDED_AGE_MS = 24 * 60 * 60 * 1000;
 
 // --- Helper Functions ---
 
@@ -127,6 +129,35 @@ async function fetchWithRetry(
   throw lastError || new Error("Polymarket API request failed");
 }
 
+function parseEndDate(raw: unknown): number | null {
+  if (raw === null || raw === undefined) {
+    return null;
+  }
+
+  if (typeof raw === "number" && Number.isFinite(raw)) {
+    const parsed = raw < 1_000_000_000_000 ? raw * 1000 : raw;
+    return parsed >= MIN_VALID_ENDDATE_MS ? parsed : null;
+  }
+
+  if (typeof raw === "string") {
+    const trimmed = raw.trim();
+    if (!trimmed) {
+      return null;
+    }
+    const numeric = Number.parseFloat(trimmed);
+    if (Number.isFinite(numeric)) {
+      const parsed = numeric < 1_000_000_000_000 ? numeric * 1000 : numeric;
+      return parsed >= MIN_VALID_ENDDATE_MS ? parsed : null;
+    }
+    const parsed = Date.parse(trimmed);
+    if (!Number.isNaN(parsed) && parsed >= MIN_VALID_ENDDATE_MS) {
+      return parsed;
+    }
+  }
+
+  return null;
+}
+
 // --- Public API ---
 
 /**
@@ -173,7 +204,7 @@ export async function fetchPolymarketMarkets(
     const markets: any[] = Array.isArray(data) ? data : (data?.data || data?.markets || []);
 
     // Map CLOB response to PolymarketMarket format
-    return markets.map((m: any) => ({
+    const mapped = markets.map((m: any) => ({
       id: m.condition_id || m.id || "",
       slug: m.market_slug || m.slug || "",
       question: m.question || m.title || "",
@@ -189,6 +220,20 @@ export async function fetchPolymarketMarkets(
       // Include token info for price fetching
       tokens: m.tokens || [],
     }));
+
+    const now = Date.now();
+    return mapped.filter((market) => {
+      if (market.archived || market.active === false) {
+        return false;
+      }
+
+      const endDate = parseEndDate(market.endDate);
+      if (endDate === null) {
+        return true;
+      }
+
+      return endDate >= now - MAX_ENDED_AGE_MS;
+    });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error(`[Polymarket API] Failed to fetch markets:`, errorMessage);
@@ -268,7 +313,6 @@ export async function fetchPolymarketOrderBook(
     return null;
   }
 }
-
 
 
 

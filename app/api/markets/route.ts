@@ -9,14 +9,15 @@ import { apiRateLimiter, getClientIdentifier } from "@/lib/rateLimit";
 import { getCorsHeaders, sanitizeError, addSecurityHeaders } from "@/lib/security";
 import { validateLimitParam } from "@/lib/validation";
 import { platformFetchers } from "@/lib/marketSources";
+import { buildClusters } from "@/lib/marketClustering";
 
 export const runtime = "nodejs";
 export const preferredRegion = "gru1";
 
-const DEFAULT_LIMIT = 20;
+const DEFAULT_LIMIT = 50;
 const MIN_LIMIT = 5;
-const MAX_LIMIT = 50;
-const CACHE_TTL_MS = 15_000;
+const MAX_LIMIT = 200;
+const CACHE_TTL_MS = 5_000;
 const MAX_STALE_AGE_MS = 60_000;
 
 interface CacheEntry {
@@ -26,6 +27,16 @@ interface CacheEntry {
 
 let cache: CacheEntry | null = null;
 let inflightPromise: Promise<MarketsResponse> | null = null;
+const platformInflight = new Map<PlatformSource, Promise<MarketPriceSnapshot[]>>();
+const platformCache = new Map<PlatformSource, { data: MarketPriceSnapshot[]; expiresAt: number }>();
+
+const PLATFORM_TTLS: Record<PlatformSource, number> = {
+  opinion: 10_000,
+  polymarket: 20_000,
+  kalshi: 30_000,
+  predictfun: 30_000,
+  limitless: 30_000,
+};
 
 function parseLimit(searchParams: URLSearchParams): number {
   const limitParam = searchParams.get("limit");
@@ -63,13 +74,6 @@ function isStaleCacheValid(): boolean {
 async function fetchMarkets(limit: number): Promise<MarketsResponse> {
   const platforms = Object.keys(platformFetchers) as PlatformSource[];
 
-  const results = await Promise.allSettled(
-    platforms.map(async (platform) => {
-      const data = await platformFetchers[platform](limit);
-      return { platform, data };
-    })
-  );
-
   const sources = platforms.reduce<Record<PlatformSource, PlatformSourceState>>(
     (acc, platform) => {
       acc[platform] = { status: "error" };
@@ -80,25 +84,63 @@ async function fetchMarkets(limit: number): Promise<MarketsResponse> {
 
   const list: MarketPriceSnapshot[] = [];
 
-  results.forEach((result, index) => {
-    const platform = platforms[index];
+  const results = await Promise.all(
+    platforms.map(async (platform) => {
+      const ttl = PLATFORM_TTLS[platform] ?? 15_000;
+      const cached = platformCache.get(platform);
+      if (cached && Date.now() < cached.expiresAt) {
+        return { platform, status: "live", data: cached.data };
+      }
 
-    if (result.status === "fulfilled") {
-      sources[platform] = { status: "live" };
-      list.push(...result.value.data);
+      if (platformInflight.has(platform)) {
+        try {
+          const data = await platformInflight.get(platform)!;
+          return { platform, status: "live", data };
+        } catch (error) {
+          return { platform, status: "error", error: sanitizeError(error), data: [] };
+        }
+      }
+
+      const inflight = platformFetchers[platform](limit);
+      platformInflight.set(platform, inflight);
+
+      try {
+        const data = await inflight;
+        platformCache.set(platform, { data, expiresAt: Date.now() + ttl });
+        return { platform, status: "live", data };
+      } catch (error) {
+        const fallback = platformCache.get(platform);
+        if (fallback) {
+          return { platform, status: "error", error: sanitizeError(error), data: fallback.data };
+        }
+        return { platform, status: "error", error: sanitizeError(error), data: [] };
+      } finally {
+        platformInflight.delete(platform);
+      }
+    })
+  );
+
+  results.forEach((result) => {
+    if (result.status === "live") {
+      sources[result.platform] = { status: "live" };
+      list.push(...result.data);
       return;
     }
 
-    sources[platform] = {
+    sources[result.platform] = {
       status: "error",
-      error: sanitizeError(result.reason),
+      error: result.error,
     };
   });
+
+  const { clusters, themes } = buildClusters(list);
 
   const response: MarketsResponse = {
     updatedAt: Date.now(),
     stale: false,
     list,
+    clusters,
+    themes,
     sources,
   };
 
@@ -194,8 +236,6 @@ export async function GET(request: NextRequest) {
     return addSecurityHeaders(response);
   }
 }
-
-
 
 
 

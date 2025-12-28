@@ -85,6 +85,40 @@ export interface MarketMatch {
   normalizedTitle: string; // Normalized title for matching
 }
 
+/** Clustered market within a theme */
+export interface ClusterMarket {
+  platform: Platform;
+  marketId: string | number;
+  marketTitle: string;
+  marketUrl: string;
+  yesPrice: number;
+  noPrice: number;
+  volume24h?: number;
+  updatedAt?: number;
+  expiresAt?: number;
+  category?: string;
+  tags?: string[];
+  description?: string;
+}
+
+/** Cluster of similar markets across platforms */
+export interface MarketCluster {
+  id: string;
+  title: string;
+  normalizedTitle: string;
+  themeKey: string;
+  platformCount: number;
+  markets: ClusterMarket[];
+}
+
+/** Theme grouping for clustered markets */
+export interface ThemeClusterGroup {
+  themeKey: string;
+  totalClusters: number;
+  totalMarkets: number;
+  clusters: MarketCluster[];
+}
+
 /** Platform market sources */
 export type PlatformSource = "opinion" | "kalshi" | "polymarket" | "predictfun" | "limitless";
 
@@ -116,6 +150,8 @@ export interface MarketsResponse {
   updatedAt: number;
   stale: boolean;
   list: MarketPriceSnapshot[];
+  clusters?: MarketCluster[];
+  themes?: ThemeClusterGroup[];
   sources: Record<PlatformSource, PlatformSourceState>;
   error?: string;
 }
